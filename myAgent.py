@@ -106,13 +106,10 @@ while(True):
     env.render()
     action = env.action_space.sample()
     state, reward, done, info = env.step(action)
-    state, reward, done, info = env.step(action)
-    state, reward, done, info = env.step(action)
-    state, reward, done, info = env.step(action)
-    state, reward, done, info = env.step(action)
 
     reorderObservations()
     observationT1 = observation(state) 
+    
     # Turn most recent 4 observations into a training instance  
     myDataInstance = dataInstance(observationT1, observationT2, observationT3, observationT4)
     myDataInstance.viewAllImages()
