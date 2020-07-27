@@ -9,6 +9,7 @@ from PIL import Image
 import cv2
 from dataInstance import *
 from observation import *
+import copy
 
 warnings.filterwarnings('ignore') # Gets rid of future warnings
 with warnings.catch_warnings():
@@ -76,30 +77,35 @@ def generateFirst3Frames():
     observationT1 = observation(state)
 
 
-# Define the two neural networks for Double Deep Q Learning
-QA = Sequential()
-QA.add(Flatten())
-
-QB = Sequential()
-QB.add(Dense(48, input_dim = downSizedLength * downSizedWidth, activation = 'relu'))
-QB.add(Dense(24, activation = 'relu'))
-QB.add(Dense(4, activation = 'linear'))
-QB.compile(loss = 'mse',  optimizer = Adam(lr = 0.001) )
-
-
 # Creates enviroment from OpenAI gym
 env = gym.make('Breakout-v0')
-
 state = env.reset()
 
-# Discrete(4)
-# print(env.action_space)
+# There are 4 actions for the Brickbreaker enviroment
+action_space = 4
+
+# Define the two neural networks for Double Deep Q Learning
+QA = Sequential()
+QA.add(Conv2D(64, kernel_size = 3, activation = 'relu', input_shape = (64, 64, 4) ) )
+QA.add(Conv2D(32, kernel_size = 3, activation = 'relu'))
+QA.add(Conv2D(32, kernel_size = 3, activation = 'relu'))
+QA.add(Flatten())
+QA.add(Dense(action_space, activation = 'relu') )
+
+
+QA.compile(loss = "mean_squared_error",
+        optimizer = RMSprop(lr = 0.00025,
+        rho = 0.95,
+        epsilon = 0.01),
+        metrics = ["accuracy"])
+
+QB = copy.deepcopy(QA)
 
 # Box(210, 160, 3)
 # print(env.observation_space)
 
 # Generate the first three frames so we can perform an action
-# We need 4 frames to use the nueral network
+# We need 4 frames to use the neural network
 generateFirst3Frames()
 
 while(True):
@@ -112,9 +118,10 @@ while(True):
     
     # Turn most recent 4 observations into a training instance  
     myDataInstance = dataInstance(observationT1, observationT2, observationT3, observationT4)
-    myDataInstance.viewAllImages()
+    # myDataInstance.viewAllImages()
     
-    # QA.predict(observation) 
+    #QA.predict(observationT1) 
+    QA.predict( np.ones( (1, 64, 64, 4) ) )
 
 
 while (True):
