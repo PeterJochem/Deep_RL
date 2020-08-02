@@ -46,22 +46,23 @@ class Agent():
         self.maxNumGames = 1000000
     
         self.discount = 0.95
-        self.memorySize = 10 # FIX ME
+        self.memorySize = 99 # FIX ME
             
-        self.epsilon = 0.05 # How ofte to explore
+        self.epsilon = 1.0 # How ofte to explore        
+        self.epsilon_decay = 0.95
+        self.epsilon_min = 0.1 # Don't let the epsilon be less than this
+        self.batchSize = 98
 
         self.trainRate = 100 # After how many moves should we train? 
-        self.moveNumber = 0 # Number of actions taken. Reset periodically
-    
+        self.moveNumber = 0 # Number of actions taken. Reset periodically 
         self.synchronize = 100 # The number of games to play before synchronizing networks
+        self.save = 50 # This describes how often to save each network to disk
 
         self.replayMemory = replayBuffer(self.memorySize)
         
         self.currentGameNumber = 0
-        
-        self.save = 50 # This describes how often to save each network to disk  
 
-        self.cumulativeReward = 0
+        self.cumulativeReward = 0 # Current game's total reward
 
         # These are the most recently seen observations 
         self.observationT1 = None
@@ -152,40 +153,47 @@ class Agent():
     def train(self):
         """ Describe """
         
-        batchSize = 100 # FIX ME 
-    
         # Get random sample from the ReplayMemory
-        training_data = self.replayMemory.sample(batchSize)
+        training_data = self.replayMemory.sample(self.batchSize)
         
         # Avoid training on the data garbage?
         # Add a check to make sure its not garbage!!!!!!!!
 
-
         # Split the data into input and label
-        inputs = np.array([])
-        labels = np.array([])
-        
+        inputs = [""] * len(training_data)
+        labels = [""] * len(training_data)
+
         for i in range(len(training_data) ):
             # faster way to do this?
             if (training_data[i] != None):
-                # if (training_data[i].data != None):
-                # np.append copies the data!!!!!
-                inputs = np.append(inputs, training_data[i].data)
-                labels = np.append(labels, training_data[i].value)
-    
-        # FIX ME 
-        inputs = training_data[0].data.reshape((-1, 64, 64, 4))
+                if (training_data[i].data is not None):
+                    # np.append copies the data!!!!!
+                    #inputs = np.append(inputs, training_data[i].data.reshape((-1, 64, 64, 4)))
+                    #print("adding a value")
+                    #inputs.append( training_data[i].data.reshape(-1, 64, 64, 4))
+                    #inputs.append( training_data[i].data )
+                    #labels.append( training_data[i].value )
+                    inputs[i] = training_data[i].data 
+                    labels[i] = training_data[i].value
 
+    
+        inputs = np.array( inputs )
+        labels = np.array( labels )
+        
+
+        # FIX ME 
+        # inputs = training_data[0].data.reshape((-1, 64, 64, 4))
+        
         # labels = np.array( [training_data[0].value] )
         # labels = np.array( [ np.array( [1.0, 2.0, 3.0, 4.0] ) ])
-        labels = np.array( [training_data[0].value] )
+        # labels = np.array( [training_data[0].value] )
 
         # Use Keras API
         history = self.QA.fit(    
             inputs,
             labels,
             batch_size = 64,
-            epochs = 10,
+            epochs = 5,
             verbose = 0
             # We pass some validation for
             # monitoring validation loss and metrics
@@ -266,7 +274,11 @@ while(True):
     # Check if it is time to train
     if ( (myAgent.moveNumber + myAgent.trainRate) % myAgent.trainRate == 0 ):
         print("training")
-        # myAgent.train()
+        myAgent.epsilon = myAgent.epsilon * myAgent.epsilon_decay 
+        if (myAgent.epsilon < myAgent.epsilon_min):
+            myAgent.epsilon = myAgent.epsilon_min
+
+        myAgent.train()
 
     # Check to save the network for later use
     if ( (myAgent.currentGameNumber + myAgent.save) % myAgent.save == 0 ):    
