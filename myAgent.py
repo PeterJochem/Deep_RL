@@ -2,7 +2,6 @@ import numpy as np
 import time
 import random
 import sys
-import os
 import gym
 import warnings
 from PIL import Image
@@ -10,6 +9,8 @@ import cv2
 from dataInstance import *
 from observation import *
 import copy
+import signal, os
+from replayBuffer import *
 
 warnings.filterwarnings('ignore') # Gets rid of future warnings
 with warnings.catch_warnings():
@@ -24,108 +25,149 @@ with warnings.catch_warnings():
     deprecation._PRINT_DEPRECATION_WARNINGS = False
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-# Globals
-downSizedLength = 64
-downSizedWidth = 64
 
-# These are the most recently seen observations 
-observationT1 = None
-observationT2 = None
-observationT3 = None
-observationT4 = None
-observationT5 = None
+def handler1(signum, frame):
 
-# In order to make room for the next observation, move
-# back each one in the "queue"
-def reorderObservations():
-    global observationT1
-    global observationT2
-    global observationT3
-    global observationT4
-    global observationT5
+    print("The ctrl-z (sigstp) signal handler ran!")
+    print("Here we should save the neural network and show what the agent has learned")
+    # Add another boolean to switch back into training mode after pausing to view progress
+
+
+signal.signal(signal.SIGTSTP, handler1)
+
+
+class Agent():
     
-    observationT5 = observationT4
-    observationT4 = observationT3
-    observationT3 = observationT2
-    observationT2 = observationT1
- 
+    def __init__(self):
+     
+        # Hyper-parameters
+        self.downSizedLength = 64
+        self.downSizedWidth = 64
+    
+        self.discount = 0.95
+        self.memorySize = 1000
 
-# Generate the first three frames so we can perform an action
-# We need 4 frames to use the nueral network
-# Input: void
-# Return: void
-def generateFirst3Frames():
-    global observationT1
-    global observationT2
-    global observationT3
-    global observationT4
-    global observationT5
+        self.replayBuffer = replayBuffer(self.memorySize)
 
-    env.render()
-    action = env.action_space.sample()
-    state, reward, done, info = env.step(action)
-    observationT3 = observation(state)
+        # These are the most recently seen observations 
+        self.observationT1 = None
+        self.observationT2 = None
+        self.observationT3 = None
+        self.observationT4 = None
+        self.observationT5 = None
+    
+        # Creates enviroment from OpenAI gym
+        self.env = gym.make('Breakout-v0')
+        self.state = self.env.reset()
+
+        # There are 4 actions for the Brickbreaker enviroment
+        self.action_space = 4
+
         
-    env.render()
-    action = env.action_space.sample()
-    state, reward, done, info = env.step(action)
-    observationT2 = observation(state)
-
-    env.render()
-    action = env.action_space.sample()
-    state, reward, done, info = env.step(action)
-    observationT1 = observation(state)
 
 
-# Creates enviroment from OpenAI gym
-env = gym.make('Breakout-v0')
-state = env.reset()
+        # Define the two neural networks for Double Deep Q Learning
+        self.QA = Sequential()
+        self.QA.add(Conv2D(64, kernel_size = 3, activation = 'relu', input_shape = (64, 64, 4) ) )
+        self.QA.add(Conv2D(32, kernel_size = 3, activation = 'relu'))
+        self.QA.add(Conv2D(32, kernel_size = 3, activation = 'relu'))
+        self.QA.add(Flatten())
+        self.QA.add(Dense(self.action_space, activation = 'relu') )
 
-# There are 4 actions for the Brickbreaker enviroment
-action_space = 4
-
-# Define the two neural networks for Double Deep Q Learning
-QA = Sequential()
-QA.add(Conv2D(64, kernel_size = 3, activation = 'relu', input_shape = (64, 64, 4) ) )
-QA.add(Conv2D(32, kernel_size = 3, activation = 'relu'))
-QA.add(Conv2D(32, kernel_size = 3, activation = 'relu'))
-QA.add(Flatten())
-QA.add(Dense(action_space, activation = 'relu') )
-
-
-QA.compile(loss = "mean_squared_error",
+        self.QA.compile(loss = "mean_squared_error",
         optimizer = RMSprop(lr = 0.00025,
         rho = 0.95,
         epsilon = 0.01),
         metrics = ["accuracy"])
 
-QB = copy.deepcopy(QA)
+        self.QB = copy.deepcopy(self.QA)
+
+    
+    # In order to make room for the next observation, move
+    # back each one in the "queue"
+    def reorderObservations(self):
+    
+        self.observationT5 = self.observationT4
+        self.observationT4 = self.observationT3
+        self.observationT3 = self.observationT2
+        self.observationT2 = self.observationT1
+ 
+    # Generate the first three frames so we can perform an action
+    # We need 4 frames to use the nueral network
+    # Input: void
+    # Return: void
+    def generateFirst3Frames(self):
+
+        self.env.render()
+        action = self.env.action_space.sample()
+        state, reward, done, info = self.env.step(action)
+        self.observationT3 = observation(state)
+        
+        self.env.render()
+        self.action = self.env.action_space.sample()
+        state, reward, done, info = self.env.step(action)
+        self.observationT2 = observation(state)
+
+        self.env.render()
+        action = self.env.action_space.sample()
+        state, reward, done, info = self.env.step(action)
+        self.observationT1 = observation(state)
+
+    def updateNetworks(self):
+        QB = copy.deepcopy(self.QA)        
+    
+    
+    def target_value(self, nextState, immediateReward):
+        """ Use the Bellman equation to compute the optimal
+        action and its predicted cumulative reward """
+        
+        # The network predicts the discounted value from that state
+        # so predict the value for each state and then take the largest index with argmax
+        action = np.argmax( self.QA.predict(nextState) )
+            
+        # print(self.QB.predict(nextState) )
+    
+        y_target = immediateReward + (self.discount * (self.QB.predict(nextState))[0][action] )
+           
+        return y_target
+        
+        
+
+myAgent = Agent()
 
 # Box(210, 160, 3)
 # print(env.observation_space)
 
 # Generate the first three frames so we can perform an action
 # We need 4 frames to use the neural network
-generateFirst3Frames()
+myAgent.generateFirst3Frames()
 
 while(True):
-    env.render()
-    action = env.action_space.sample()
-    state, reward, done, info = env.step(action)
-
-    reorderObservations()
-    observationT1 = observation(state) 
+    myAgent.env.render()
+    action = myAgent.env.action_space.sample()
+    state, reward, done, info = myAgent.env.step(action)
+    
+    myAgent.reorderObservations()
+    myAgent.observationT1 = observation(state) 
     
     # Turn most recent 4 observations into a training instance  
-    myDataInstance = dataInstance(observationT1, observationT2, observationT3, observationT4)
+    myDataInstance = dataInstance(myAgent.observationT1, myAgent.observationT2, myAgent.observationT3, myAgent.observationT4)
     # myDataInstance.viewAllImages()
     
-    #QA.predict(observationT1) 
-    QA.predict( np.ones( (1, 64, 64, 4) ) )
+    prediction = myAgent.QA.predict( np.array( [myDataInstance.data] ) )
+
+    # Label the data and put into the replay buffer
+    myDataInstance.value = myAgent.target_value( np.array( [ myDataInstance.data ] ), reward) 
+    
+    myAgent.replayBuffer.append(myDataInstance)
+    
+
+    # print( np.argmax(prediction) )
 
 
-while (True):
-    continue
 
-    # time.sleep(0.2)
+
+
+
+
 

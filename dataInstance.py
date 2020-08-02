@@ -17,6 +17,39 @@ class dataInstance():
         self.obserT3 = obserT3
         self.obserT4 = obserT4
             
+        # Put all the frames together into one object
+        # This creates a 4 x 64 x 64 image 
+        # self.data = np.array( [self.obserT1.pixels, self.obserT2.pixels, self.obserT3.pixels, self.obserT4.pixels] )
+        
+        self.formatData()
+        
+        # print(self.data.shape )
+
+        # Set to something else initially?
+        self.value = 0.0
+
+
+    def formatData(self):
+        """ Describe """
+        self.data = np.zeros( (64, 64, 4) )
+        
+        for i in range(64):
+            for j in range(64):
+                self.data[i, j, 0] = self.obserT1.pixels[i, j]
+        
+        for i in range(64):
+            for j in range(64):
+                self.data[i, j, 0] = self.obserT2.pixels[i, j]
+
+        for i in range(64):
+            for j in range(64):
+                self.data[i, j, 0] = self.obserT3.pixels[i, j]
+    
+        for i in range(64):
+            for j in range(64):
+                self.data[i, j, 0] = self.obserT4.pixels[i, j]
+
+
 
     # This will display all 4 images in a matplotlib display
     def viewAllImages(self):        
