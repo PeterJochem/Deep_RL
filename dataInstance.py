@@ -26,6 +26,7 @@ class dataInstance():
         # print(self.data.shape )
 
         # Set to something else initially?
+        # This is the "label" for the data
         self.value = 0.0
 
 

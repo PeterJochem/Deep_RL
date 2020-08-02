@@ -1,4 +1,4 @@
-
+import random
 
 class replayBuffer():
     """ This class describes the replay buffer """
@@ -16,6 +16,8 @@ class replayBuffer():
         self.index = (self.index + 1) % self.max_size
 
     def sample(self, batch_size):
-        indices = sample(range(self.size), batch_size)
-        return [self.buffer[index] for index in indices]
+        
+        return random.sample(self.buffer, batch_size)
+        # indices = random.sample(range(self.size), batch_size)
+        # return [self.buffer[index] for index in indices]
 

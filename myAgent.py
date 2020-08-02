@@ -43,11 +43,25 @@ class Agent():
         # Hyper-parameters
         self.downSizedLength = 64
         self.downSizedWidth = 64
+        self.maxNumGames = 1000000
     
         self.discount = 0.95
-        self.memorySize = 1000
+        self.memorySize = 10 # FIX ME
+            
+        self.epsilon = 0.05 # How ofte to explore
 
-        self.replayBuffer = replayBuffer(self.memorySize)
+        self.trainRate = 100 # After how many moves should we train? 
+        self.moveNumber = 0 # Number of actions taken. Reset periodically
+    
+        self.synchronize = 100 # The number of games to play before synchronizing networks
+
+        self.replayMemory = replayBuffer(self.memorySize)
+        
+        self.currentGameNumber = 0
+        
+        self.save = 50 # This describes how often to save each network to disk  
+
+        self.cumulativeReward = 0
 
         # These are the most recently seen observations 
         self.observationT1 = None
@@ -61,9 +75,8 @@ class Agent():
         self.state = self.env.reset()
 
         # There are 4 actions for the Brickbreaker enviroment
+        # Set this programatically
         self.action_space = 4
-
-        
 
 
         # Define the two neural networks for Double Deep Q Learning
@@ -83,10 +96,10 @@ class Agent():
         self.QB = copy.deepcopy(self.QA)
 
     
-    # In order to make room for the next observation, move
-    # back each one in the "queue"
     def reorderObservations(self):
-    
+        """In order to make room for the next observation, move 
+        back each one in the "queue" """
+
         self.observationT5 = self.observationT4
         self.observationT4 = self.observationT3
         self.observationT3 = self.observationT2
@@ -96,7 +109,12 @@ class Agent():
     # We need 4 frames to use the nueral network
     # Input: void
     # Return: void
-    def generateFirst3Frames(self):
+    def generateFirst4Frames(self):
+        
+        self.env.render()
+        action = self.env.action_space.sample()
+        state, reward, done, info = self.env.step(action)
+        self.observationT4 = observation(state)
 
         self.env.render()
         action = self.env.action_space.sample()
@@ -130,41 +148,131 @@ class Agent():
         y_target = immediateReward + (self.discount * (self.QB.predict(nextState))[0][action] )
            
         return y_target
+
+    def train(self):
+        """ Describe """
         
+        batchSize = 100 # FIX ME 
+    
+        # Get random sample from the ReplayMemory
+        training_data = self.replayMemory.sample(batchSize)
         
+        # Avoid training on the data garbage?
+        # Add a check to make sure its not garbage!!!!!!!!
+
+
+        # Split the data into input and label
+        inputs = np.array([])
+        labels = np.array([])
+        
+        for i in range(len(training_data) ):
+            # faster way to do this?
+            if (training_data[i] != None):
+                # if (training_data[i].data != None):
+                # np.append copies the data!!!!!
+                inputs = np.append(inputs, training_data[i].data)
+                labels = np.append(labels, training_data[i].value)
+    
+        # FIX ME 
+        inputs = training_data[0].data.reshape((-1, 64, 64, 4))
+
+        # labels = np.array( [training_data[0].value] )
+        # labels = np.array( [ np.array( [1.0, 2.0, 3.0, 4.0] ) ])
+        labels = np.array( [training_data[0].value] )
+
+        # Use Keras API
+        history = self.QA.fit(    
+            inputs,
+            labels,
+            batch_size = 64,
+            epochs = 10,
+            verbose = 0
+            # We pass some validation for
+            # monitoring validation loss and metrics
+            # at the end of each epoch
+            # validation_data=(x_val, y_val),
+        )
+             
+    
+        
+    def saveNetworks(self):
+        self.QA.save("neural_networks/A")
+        self.QB.save("neural_networks/B")
+
+
 
 myAgent = Agent()
 
 # Box(210, 160, 3)
 # print(env.observation_space)
 
+# Add option to load network from saved files
+# with command line arguments
+
+
 # Generate the first three frames so we can perform an action
 # We need 4 frames to use the neural network
-myAgent.generateFirst3Frames()
+myAgent.generateFirst4Frames()
+
+myDataInstance = dataInstance(myAgent.observationT1, myAgent.observationT2, myAgent.observationT3, myAgent.observationT4)
 
 while(True):
     myAgent.env.render()
-    action = myAgent.env.action_space.sample()
+    
+    prediction = myAgent.QA.predict( np.array( [myDataInstance.data] ) )[0]
+    action = np.argmax(prediction)
+    
+    if ( random.random() < myAgent.epsilon ):
+        # Choose action randomly
+        # FIX ME - depends on exact way the data is published in game
+        action =  random.randint(0, myAgent.action_space - 1)
+    
+    
     state, reward, done, info = myAgent.env.step(action)
     
+    # Label the data
+    predictedValue = myAgent.target_value( np.array( [ myDataInstance.data ] ), reward)
+    
+    myDataInstance.value = prediction
+    myDataInstance.value[action] = predictedValue
+    
+    myAgent.replayMemory.append(myDataInstance)
+
+    # Update counters
+    myAgent.moveNumber = myAgent.moveNumber + 1
+    myAgent.cumulativeReward = myAgent.cumulativeReward + reward
+    
+    # Prepare for the next iteration
     myAgent.reorderObservations()
     myAgent.observationT1 = observation(state) 
     
     # Turn most recent 4 observations into a training instance  
     myDataInstance = dataInstance(myAgent.observationT1, myAgent.observationT2, myAgent.observationT3, myAgent.observationT4)
-    # myDataInstance.viewAllImages()
+
+    if (done):
+        print("Game number " + str(myAgent.currentGameNumber) + " ended with a total reward of " + str(myAgent.cumulativeReward) )
+        myAgent.env.reset()    
+        myAgent.cumulativeReward = 0
+
+        # Check if it is time to update/synchronize the two networks
+        if ( (myAgent.currentGameNumber + myAgent.synchronize + 1) % myAgent.synchronize == 0 ):
+            print(myAgent.currentGameNumber)
+            print("Synchronized networks")
+            # myAgent.updateNetworks()
+
+        myAgent.currentGameNumber = myAgent.currentGameNumber + 1
+         
+
+    # Check if it is time to train
+    if ( (myAgent.moveNumber + myAgent.trainRate) % myAgent.trainRate == 0 ):
+        print("training")
+        # myAgent.train()
+
+    # Check to save the network for later use
+    if ( (myAgent.currentGameNumber + myAgent.save) % myAgent.save == 0 ):    
+        pass
+        # myAgent.saveNetworks()
     
-    prediction = myAgent.QA.predict( np.array( [myDataInstance.data] ) )
-
-    # Label the data and put into the replay buffer
-    myDataInstance.value = myAgent.target_value( np.array( [ myDataInstance.data ] ), reward) 
-    
-    myAgent.replayBuffer.append(myDataInstance)
-    
-
-    # print( np.argmax(prediction) )
-
-
 
 
 

@@ -34,14 +34,15 @@ class observation:
         width = len(self.pixels[0])
 
         # This will store the new image
-        newArray = np.zeros((length, width))
+        #newArray = np.zeros((length, width))
 
         # Convert the image to grayscale
-        for i in range(len(self.pixels)):
-            for j in range(len(self.pixels[i])):
+        #for i in range(len(self.pixels)):
+        #    for j in range(len(self.pixels[i])):
+        #        average = (self.pixels[i][j][0] + self.pixels[i][j][1] + self.pixels[i][j][2]) / 3.0
+        #        newArray[i][j] = average
 
-                average = (self.pixels[i][j][0] + self.pixels[i][j][1] + self.pixels[i][j][2]) / 3.0
-                newArray[i][j] = average
+        newArray = cv2.cvtColor(self.pixels, cv2.COLOR_BGR2GRAY)
 
         # Resize the image
         newArray = cv2.resize(newArray, dsize = (self.downSizedLength, self.downSizedWidth), interpolation = cv2.INTER_CUBIC)
