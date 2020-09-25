@@ -46,14 +46,14 @@ class Agent():
         self.maxNumGames = 1000000
     
         self.discount = 0.95
-        self.memorySize = 99 # FIX ME
+        self.memorySize = 500 # FIX ME
             
-        self.epsilon = 1.0 # How ofte to explore        
+        self.epsilon = 1.0 # How often to explore        
         self.epsilon_decay = 0.95
         self.epsilon_min = 0.1 # Don't let the epsilon be less than this
-        self.batchSize = 98
+        self.batchSize = 499
 
-        self.trainRate = 100 # After how many moves should we train? 
+        self.trainRate = 500 # After how many moves should we train? 
         self.moveNumber = 0 # Number of actions taken. Reset periodically 
         self.synchronize = 100 # The number of games to play before synchronizing networks
         self.save = 50 # This describes how often to save each network to disk
@@ -78,7 +78,6 @@ class Agent():
         # There are 4 actions for the Brickbreaker enviroment
         # Set this programatically
         self.action_space = 4
-
 
         # Define the two neural networks for Double Deep Q Learning
         self.QA = Sequential()
@@ -142,13 +141,10 @@ class Agent():
         
         # The network predicts the discounted value from that state
         # so predict the value for each state and then take the largest index with argmax
-        action = np.argmax( self.QA.predict(nextState) )
-            
-        # print(self.QB.predict(nextState) )
+        action = np.argmax( self.QA.predict(np.array( [nextState] ) ) )
     
-        y_target = immediateReward + (self.discount * (self.QB.predict(nextState))[0][action] )
-           
-        return y_target
+        return immediateReward + (self.discount * (self.QB.predict(np.array( [nextState] )))[0][action] )
+        
 
     def train(self):
         """ Describe """
@@ -179,16 +175,8 @@ class Agent():
     
         inputs = np.array( inputs )
         labels = np.array( labels )
-        
-
-        # FIX ME 
         # inputs = training_data[0].data.reshape((-1, 64, 64, 4))
-        
-        # labels = np.array( [training_data[0].value] )
-        # labels = np.array( [ np.array( [1.0, 2.0, 3.0, 4.0] ) ])
-        # labels = np.array( [training_data[0].value] )
 
-        # Use Keras API
         history = self.QA.fit(    
             inputs,
             labels,
@@ -211,14 +199,10 @@ class Agent():
 
 myAgent = Agent()
 
-# Box(210, 160, 3)
-# print(env.observation_space)
-
 # Add option to load network from saved files
 # with command line arguments
 
-
-# Generate the first three frames so we can perform an action
+# Generate the first four frames so we can perform an action
 # We need 4 frames to use the neural network
 myAgent.generateFirst4Frames()
 
@@ -239,7 +223,7 @@ while(True):
     state, reward, done, info = myAgent.env.step(action)
     
     # Label the data
-    predictedValue = myAgent.target_value( np.array( [ myDataInstance.data ] ), reward)
+    predictedValue = myAgent.target_value(myDataInstance.data, reward)
     
     myDataInstance.value = prediction
     myDataInstance.value[action] = predictedValue

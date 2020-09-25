@@ -16,7 +16,13 @@ class replayBuffer():
         self.index = (self.index + 1) % self.max_size
 
     def sample(self, batch_size):
-        
+            
+        if (self.size <= self.max_size and self.index > batch_size):
+            return random.sample(self.buffer[:self.index - 1], batch_size)
+        elif (self.index <= batch_size):
+            return self.buffer[:self.index - 1]
+
+
         return random.sample(self.buffer, batch_size)
         # indices = random.sample(range(self.size), batch_size)
         # return [self.buffer[index] for index in indices]
