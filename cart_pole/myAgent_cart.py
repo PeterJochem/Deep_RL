@@ -7,7 +7,6 @@ import warnings
 from PIL import Image
 import cv2
 from experience import *
-from observation import *
 import copy
 import signal, os
 from replayBuffer import *
