@@ -78,12 +78,13 @@ class Agent():
 
         # Define the two neural networks for Double Deep Q Learning
         self.QA = Sequential()
-        self.QA.add(Dense(20, input_dim = 4, activation='relu'))
-        self.QA.add(Dense(10, activation='relu'))
-        self.QA.add(Dense(8, activation='relu'))
+        self.QA.add(Dense(24, input_dim = 4, activation='relu'))
+        self.QA.add(Dense(24, activation='relu'))
         # Try a softmax?
         self.QA.add(Dense(2, activation='linear'))
-        self.QA.compile(loss = "mse",  optimizer = Adam(lr = 0.000001))
+        self.QA.compile(loss = "mse",  optimizer = Adam(lr = 0.001))
+        #self.QA.compile(loss = "mse",  optimizer = Adam(lr = 0.0000001))
+        
 
         # Try the Huber loss
         #self.QA.compile(loss = "mean_squared_error",
