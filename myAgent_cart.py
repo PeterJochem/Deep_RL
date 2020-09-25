@@ -66,7 +66,6 @@ class Agent():
         self.replayMemory = replayBuffer(self.memorySize)
         
         self.currentGameNumber = 0
-
         self.cumulativeReward = 0 # Current game's total reward
 
         # Creates enviroment from OpenAI gym
@@ -102,8 +101,6 @@ class Agent():
         # so predict the value for each state and then take the largest index with argmax
         next_action = np.argmax(self.QA.predict(np.array([next_state])))
     
-        #print(self.QA.predict(np.array([state])))
-
         return immediateReward + (self.discount * self.QB.predict(np.array([next_state]))[0][next_action])
        
     # Be careful with nextState - is that really what you want?

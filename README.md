@@ -2,7 +2,8 @@
 This is an implementation of Double Deep-Q Learning as described in https://arxiv.org/abs/1509.06461. I had implemented Deep Q Learning in the past and wanted to try a slightly more interesting reinforcement learning algorithm. I wanted to implement D-DQN for the Atari brickbreaker environment. As a testing and debugging strategy, I started with the cart-pole environment in order to more quickly tweak my algorithm and be able to to see the results. From the reading I have done online, it should take a day or a few days of training in the Brick-Breaker environment. 
 
 # High Level Overview of Algorithm
-Insert the image of the pseudo code
+![DDQN Pseudo Code](images/DDQN_Pseudo_Code.png)
+
 
 # What Issues Does Double Deep Q Learning Address
 Double Deep Q Learning is an improvement over DQN in that it uses two neural networks. There is the original online network used to choose actions and then a target network used to evaulate the value of given state, action pairs. The target is updated every k training cycles, where k is a hyperparameter. On the kth training cycle, the weights of the online network are copied to the target network. The online network has its weights updated as usual. We have decoupled the action selection and the action evaluation. This has two benefits. 
