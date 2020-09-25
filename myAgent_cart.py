@@ -6,7 +6,7 @@ import gym
 import warnings
 from PIL import Image
 import cv2
-from dataInstance import *
+from experience import *
 from observation import *
 import copy
 import signal, os
@@ -25,8 +25,9 @@ with warnings.catch_warnings():
     deprecation._PRINT_DEPRECATION_WARNINGS = False
     tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-allReward = []
+allReward = [] # List of rewards over time, for logging and visualization
 
+"""Signal handler displays the agent's progress"""
 def handler1(signum, frame):
 
     print("The ctrl-z (sigstp) signal handler ran!")
@@ -39,6 +40,7 @@ def handler1(signum, frame):
     plt.xlabel('Episode')
     plt.show()
 
+    myAgent.epsilon_min = 0.00001
 
 signal.signal(signal.SIGTSTP, handler1)
 
@@ -75,23 +77,12 @@ class Agent():
         # Set this programatically?
         self.action_space = 2
 
-
         # Define the two neural networks for Double Deep Q Learning
         self.QA = Sequential()
         self.QA.add(Dense(24, input_dim = 4, activation='relu'))
         self.QA.add(Dense(24, activation='relu'))
-        # Try a softmax?
         self.QA.add(Dense(2, activation='linear'))
         self.QA.compile(loss = "mse",  optimizer = Adam(lr = 0.001))
-        #self.QA.compile(loss = "mse",  optimizer = Adam(lr = 0.0000001))
-        
-
-        # Try the Huber loss
-        #self.QA.compile(loss = "mean_squared_error",
-        #optimizer = RMSprop(lr = 0.00025,
-        #rho = 0.95,
-        #epsilon = 0.01),
-        #metrics = ["accuracy"])
 
         self.QB = copy.deepcopy(self.QA)
 
@@ -129,14 +120,10 @@ class Agent():
 
     
     def train(self):
-        """ Describe """
         
         # Get random sample from the ReplayMemory
         training_data = self.replayMemory.sample(self.batchSize)
         
-        # Avoid training on the data garbage?
-        # Add a check to make sure its not garbage!!!!!!!!
-
         # Split the data into input and label
         inputs = [""] * len(training_data)
         labels = [""] * len(training_data)
@@ -161,26 +148,15 @@ class Agent():
     
         inputs = np.array(inputs)
         labels = np.array(labels)
-     
-        history = self.QA.fit(    
-            inputs,
-            labels,
-            batch_size = 64,
-            epochs = 1,
-            verbose = 0
-            # We pass some validation for
-            # monitoring validation loss and metrics
-            # at the end of each epoch
-            # validation_data=(x_val, y_val),
-        )
-             
-    
+
+        history = self.QA.fit(inputs, labels, batch_size = 64, epochs = 1, verbose = 0)
+              
         
     def saveNetworks(self):
-        self.QA.save("neural_networks/A")
-        self.QB.save("neural_networks/B")
+        self.QA.save("neural_networks/online")
+        self.QB.save("neural_networks/target")
 
-    def resetGame(self):
+    def handleGameEnd(self):
         
         print("Game number " + str(self.currentGameNumber) + " ended with a total reward of " + str(self.cumulativeReward))
         self.env.reset()
@@ -209,13 +185,11 @@ while(True):
     action = np.argmax(predicted_values)
     
     if (random.random() < myAgent.epsilon):
-        # Choose action randomly
-        # FIX ME - depends on exact way the data is published in game
         action = random.randint(0, myAgent.action_space - 1)
        
     next_state, reward, done, info = myAgent.env.step(action)
         
-    currentExperience = dataInstance(current_state, next_state, action, reward, done)
+    currentExperience = experience(current_state, next_state, action, reward, done)
     
     # Label the data
     target_value = myAgent.target_value(current_state, next_state, reward, done)
@@ -233,7 +207,7 @@ while(True):
     myAgent.cumulativeReward = myAgent.cumulativeReward + reward
     
     if (done):
-        myAgent.resetGame()
+        myAgent.handleGameEnd()
          
     
     # Check if it is time to train
