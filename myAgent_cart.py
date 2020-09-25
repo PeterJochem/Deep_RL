@@ -30,10 +30,6 @@ allReward = [] # List of rewards over time, for logging and visualization
 """Signal handler displays the agent's progress"""
 def handler1(signum, frame):
 
-    print("The ctrl-z (sigstp) signal handler ran!")
-    print("Here we should save the neural network and show what the agent has learned")
-    # Add another boolean to switch back into training mode after pausing to view progress
-
     # Plot the data
     plt.plot(allReward)
     plt.ylabel('Cumulative Reward')
@@ -51,43 +47,41 @@ class Agent():
      
         # Hyper-parameters
         self.discount = 0.95
-        self.memorySize = 5000 # FIX ME
-            
+        self.memorySize = 5000
+        self.replay_sample_size = 2000 # How many experiences to sample from replay when we train
+
         self.epsilon = 1.0 # How often to explore        
-        self.epsilon_decay = 0.95
+        self.epsilon_decay = 0.95 # After each training, rate of decay of epsilon
         self.epsilon_min = 0.1 # Don't let the epsilon be less than this
-        self.batchSize = 2000
+        self.batch_size = 64 # Mini batch size for keras .fit method
 
         self.trainRate = 450 # After how many moves should we train? 
-        self.moveNumber = 0 # Number of actions taken. Reset periodically 
-        self.synchronize = 15 # The number of games to play before synchronizing networks
-        self.save = 50 # This describes how often to save each network to disk
+        self.moveNumber = 0 # Number of actions taken in the current episode 
+        self.synchronize = 15 # The number of episodes before synchronizing networks
+        self.save = 50 # This describes how often to save each network to disk  
+        self.epochs = 1 # Epochs to train on a batch of data for neural network 
 
         self.replayMemory = replayBuffer(self.memorySize)
         
-        self.currentGameNumber = 0
+        self.currentGameNumber = 0 
         self.cumulativeReward = 0 # Current game's total reward
 
-        # Creates enviroment from OpenAI gym
         self.env = gym.make('CartPole-v1')
         self.state = self.env.reset()
 
-        # There are 2 actions for the cart-pole enviroment
-        # Set this programatically?
-        self.action_space = 2
+        self.action_space = self.env.action_space.n # Number of actions agent can take 
 
-        # Define the two neural networks for Double Deep Q Learning
-        self.QA = Sequential()
-        self.QA.add(Dense(24, input_dim = 4, activation='relu'))
-        self.QA.add(Dense(24, activation='relu'))
-        self.QA.add(Dense(2, activation='linear'))
-        self.QA.compile(loss = "mse",  optimizer = Adam(lr = 0.001))
+        self.Q_online = Sequential()
+        self.Q_online.add(Dense(24, input_dim = 4, activation='relu'))
+        self.Q_online.add(Dense(24, activation='relu'))
+        self.Q_online.add(Dense(2, activation='linear'))
+        self.Q_online.compile(loss = "mse",  optimizer = Adam(lr = 0.001))
 
-        self.QB = copy.deepcopy(self.QA)
+        self.Q_target = copy.deepcopy(self.Q_online)
 
     def updateNetworks(self):
-        self.QB = copy.deepcopy(self.QA)        
-    
+        self.Q_target = copy.deepcopy(self.Q_online)       
+         
     
     # Be careful with nextState - is that really what you want?
     def target_value(self, current_state, next_state, immediateReward, done):
@@ -97,61 +91,37 @@ class Agent():
         if (done):
             return -100.0
 
-        # The network predicts the discounted value from that state
-        # so predict the value for each state and then take the largest index with argmax
-        next_action = np.argmax(self.QA.predict(np.array([next_state])))
+        next_action = np.argmax(self.Q_online.predict(np.array([next_state])))
     
-        return immediateReward + (self.discount * self.QB.predict(np.array([next_state]))[0][next_action])
-       
-    # Be careful with nextState - is that really what you want?
-    def target_value2(self, next_state, immediateReward, done, action):
-        """ Use the Bellman equation to compute the optimal
-        action and its predicted cumulative reward """
-
-        if (done):
-            return -100.0
-        
-        next_action = np.argmax(self.QA.predict(np.array([next_state])))
-        
-        return immediateReward + (self.discount * (self.QB.predict(np.array([next_state]))[0][next_action]))
-
-    
+        return immediateReward + (self.discount * self.Q_target.predict(np.array([next_state]))[0][next_action])
+          
     def train(self):
         
-        # Get random sample from the ReplayMemory
-        training_data = self.replayMemory.sample(self.batchSize)
+        training_data = self.replayMemory.sample(self.replay_sample_size)
         
-        # Split the data into input and label
         inputs = [""] * len(training_data)
         labels = [""] * len(training_data)
 
         for i in range(len(training_data)):
-            # faster way to do this?
             if (training_data[i] != None):
                 if (training_data[i].state is not None):
-                    # We need to recompute the value using the new, target network 
-                    #target_value(self, state, immediateReward, done)
-                    action_value = self.target_value2(training_data[i].next_state, training_data[i].reward, training_data[i].done, training_data[i].action) 
                     
-                    # Q_B is the values! QA is for action selection
-                    predicted_values = self.QB.predict(np.array([training_data[i].state]))
+                    state, next_state, reward, done, action = training_data[i].unpack()    
 
-                    training_data[i].action_values = predicted_values
-                    training_data[i].actions_values[training_data[i].action] = action_value
+                    predicted_values = self.Q_target.predict(np.array([state]))[0]
+                    predicted_values[action] = self.target_value(state, next_state, reward, done)
 
-                    inputs[i] = training_data[i].state
-                    labels[i] = training_data[i].actions_values
+                    inputs[i] = state
+                    labels[i] = predicted_values
 
-    
         inputs = np.array(inputs)
         labels = np.array(labels)
-
-        history = self.QA.fit(inputs, labels, batch_size = 64, epochs = 1, verbose = 0)
+        history = self.Q_online.fit(inputs, labels, batch_size = self.batch_size, epochs = self.epochs, verbose = 0)
               
         
     def saveNetworks(self):
-        self.QA.save("neural_networks/online")
-        self.QB.save("neural_networks/target")
+        self.Q_online.save("neural_networks/online")
+        self.Q_target.save("neural_networks/target")
 
     def handleGameEnd(self):
         
@@ -177,7 +147,7 @@ current_state, reward, done, info = myAgent.env.step(0)
 while(True):
     myAgent.env.render()
     
-    predicted_values = myAgent.QA.predict(np.array([current_state]))[0]
+    predicted_values = myAgent.Q_online.predict(np.array([current_state]))[0]
       
     action = np.argmax(predicted_values)
     
@@ -188,10 +158,10 @@ while(True):
         
     currentExperience = experience(current_state, next_state, action, reward, done)
     
-    # Label the data
+    # Create the experience
     target_value = myAgent.target_value(current_state, next_state, reward, done)
     
-    predicted_values = myAgent.QB.predict(np.array([current_state]))[0]
+    predicted_values = myAgent.Q_target.predict(np.array([current_state]))[0]
     currentExperience.actions_values = predicted_values
     currentExperience.actions_values[action] = target_value
     
@@ -205,8 +175,8 @@ while(True):
     
     if (done):
         myAgent.handleGameEnd()
-         
-    
+          
+
     # Check if it is time to train
     if ((myAgent.moveNumber + myAgent.trainRate) % myAgent.trainRate == 0):
         print("training")

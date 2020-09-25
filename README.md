@@ -5,7 +5,7 @@ This is an implementation of Double Deep-Q Learning as described in https://arxi
 ![DDQN Pseudo Code](images/DDQN_Pseudo_Code.png)
 
 
-# What Issues Does Double Deep Q Learning Address
+# Issues Addressed by Double Deep Q Learning
 Double Deep Q Learning is an improvement over DQN in that it uses two neural networks. There is the original online network used to choose actions and then a target network used to evaulate the value of given state, action pairs. The target is updated every k training cycles, where k is a hyperparameter. On the kth training cycle, the weights of the online network are copied to the target network. The online network has its weights updated as usual. We have decoupled the action selection and the action evaluation. This has two benefits. 
 
 One, the target values of our experiences are determined by the target network now which is changing slowly, these values are more stable. In DQN, as soon as we do gradient descent in the weight space of the neural network, we actually change the target values of our experiences and so change the loss function. We have a circular dependency. The target values are computed using the neural network, and the loss function is computed using those target values. So, as we change the weights of the neural network, we change both the target values and the loss function surface which we want to find a local minimum of. This causes the network to be relatively unstable. Double Deep Q Learning's target network changes slowly allowing us to move towards a local minimum on the same loss surface before changing the surface itself, on the kth training cycle. This helps make our training more stable.

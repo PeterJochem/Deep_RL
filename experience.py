@@ -14,4 +14,8 @@ class experience():
         self.reward = reward
         self.done = done
         self.actions_values = action_values # This is the "label" for the data
-             
+
+    def unpack(self):
+        return self.state, self.next_state, self.reward, self.done, self.action
+
+
