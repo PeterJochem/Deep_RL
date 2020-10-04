@@ -1,4 +1,3 @@
-from experience import *
 import signal, os
 from replayBuffer import *
 import gym
@@ -33,48 +32,43 @@ class Agent():
         # Hyper-parameters
         self.discount = 0.99
         self.memorySize = 100000
-        #self.replay_sample_size = 64 # How many experiences to sample from replay when we train
-
         self.batch_size = 64 # Mini batch size for keras .fit method
 
         self.moveNumber = 0 # Number of actions taken in the current episode 
         self.save = 50 # This describes how often to save each network to disk  
-        self.epochs = 1 # Epochs to train on a batch of data for neural network 
 
         self.currentGameNumber = 0 
         self.cumulativeReward = 0 # Current game's total reward
+        
+        # These parameters are Specefic to Pendulum-V0!!
+        self.max_control_signal = 2.0
+        self.lowerLimit = -2.0
+        self.upperLimit = 2.0
 
         self.env = gym.make('Pendulum-v0')
         self.state = self.env.reset()
         
         self.polyak_rate = 0.005
-
         self.action_space_size = 1 # Size of the action vector  
         self.state_space_size = 3 # Size of the observation vector
         
         self.replayMemory = replayBuffer(self.memorySize, self.state_space_size, self.action_space_size)
 
-        # Specefici to Pendulum!!!!!!!!!!!!!!!!!!!
-        self.max_control_signal = 2.0
-        self.lowerLimit = -2.0
-        self.upperLimit = 2.0
-
         self.actor = self.defineActor()
         self.actor_target = self.defineActor()
         
-        self.critic_learning_rate = 0.002
-        self.actor_learning_rate = 0.001
-
-        self.critic_optim = tf.keras.optimizers.Adam(self.critic_learning_rate)
-        self.actor_optim = tf.keras.optimizers.Adam(self.actor_learning_rate)
-        
-
         self.critic = self.defineCritic()
         self.critic_target = self.defineCritic()
 
         self.actor_target.set_weights(self.actor.get_weights())
         self.critic_target.set_weights(self.critic.get_weights())
         
+        self.critic_learning_rate = 0.002
+        self.actor_learning_rate = 0.001
+
+        self.critic_optim = tf.keras.optimizers.Adam(self.critic_learning_rate)
+        self.actor_optim = tf.keras.optimizers.Adam(self.actor_learning_rate)
+
         std_dev = 0.2
         self.init_noise_process(average = np.zeros(1), std_dev = float(std_dev) * np.ones(1))
 
@@ -83,11 +77,12 @@ class Agent():
 
         actor_initializer = tf.random_uniform_initializer(minval = -0.003, maxval = 0.003)
 
-        #inputs = layers.Input(shape = (self.state_space_size, ))
         inputs = layers.Input(shape = (self.state_space_size, ))
 
         nextLayer = layers.Dense(256, activation = "relu")(inputs)
         nextLayer = layers.Dense(256, activation = "relu")(nextLayer)
+        
+        # tanh maps into the interval of [-1, 1]
         outputs = layers.Dense(1, activation = "tanh", kernel_initializer = actor_initializer)(nextLayer)
 
         # max_control signal is 2.0 for Pendulum.
@@ -132,7 +127,6 @@ class Agent():
 
     def chooseAction(self, state):
 
-        #action = tf.squeeze(self.actor(state))
         state = tf.expand_dims(tf.convert_to_tensor(state), 0)
         action = self.actor(state)
 
@@ -167,10 +161,8 @@ class Agent():
             critic_value = self.critic([states, actions], training = True)
             critic_loss = tf.math.reduce_mean(tf.math.square(predicted_values - critic_value))
 
-
         critic_grad = tape.gradient(critic_loss, self.critic.trainable_variables)
         self.critic_optim.apply_gradients( zip(critic_grad, self.critic.trainable_variables) )
-
 
         with tf.GradientTape() as tape:
             
@@ -178,8 +170,7 @@ class Agent():
             critic_value = self.critic([states, actions], training = True)
             # Remember to negate the loss!
             actor_loss = -tf.math.reduce_mean(critic_value)
-        
-        
+                
         actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
         self.actor_optim.apply_gradients(zip(actor_grad, self.actor.trainable_variables))
         
@@ -190,9 +181,8 @@ class Agent():
         # Convert to Tensorflow data types
         states  = tf.convert_to_tensor(states)
         actions = tf.convert_to_tensor(actions)
-        rewards = tf.convert_to_tensor(rewards)
+        rewards = tf.cast(tf.convert_to_tensor(rewards), dtype = tf.float32)
 
-        rewards  = tf.cast(rewards, dtype=tf.float32)
         next_states = tf.convert_to_tensor(next_states)
 
         self.update(states, actions, rewards, next_states)
@@ -201,13 +191,12 @@ class Agent():
     def handleGameEnd(self):
 
         print("Game number " + str(self.currentGameNumber) + " ended with a total reward of " + str(self.cumulativeReward))
-        #self.env.reset()
         allReward.append(self.cumulativeReward)
         self.cumulativeReward = 0
 
         self.currentGameNumber = self.currentGameNumber + 1
 
-"""Polyak averaging instead"""
+"""Polyak averaging from online network to the target network"""
 @tf.function
 def update_target(target_weights, online_weights, polyak_rate):
 
@@ -215,15 +204,8 @@ def update_target(target_weights, online_weights, polyak_rate):
         target.assign(online * polyak_rate + target * (1 - polyak_rate))
 
 
-
-
-
 #tf.compat.v1.enable_eager_execution()
-myAgent = Agent()
-    
-
-# Randomnly choose your first action
-#current_state, reward, done, info = myAgent.env.step([0])
+myAgent = Agent()    
 
 while (True): 
     current_state = myAgent.env.reset()
@@ -254,8 +236,4 @@ while (True):
             myAgent.train()
     
         current_state = next_state
-
-
-
-
 
