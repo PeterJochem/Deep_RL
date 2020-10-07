@@ -171,7 +171,7 @@ class Agent():
     # This provides a large speed up for blocks of code that contain many small TensorFlow operations such as this one.
     @tf.function
     def update(
-        self, states, actions, rewards, next_states
+        self, states, actions, rewards, next_states, isTerminals
     ): 
     
         with tf.GradientTape() as tape:
@@ -182,7 +182,13 @@ class Agent():
             
             # Note the use of the done - element wise multipy?
             # Shouldn't I be using the isTerminal information to compute the future reward?
-            predicted_values = rewards + self.discount * self.critic_target([next_states, target_actions], training = True)
+            
+            #print(isTerminals)
+            #print(1 - isTerminals)
+            #print(self.critic_target([next_states, target_actions], training = True))
+        
+            newVector = tf.cast(1 - isTerminals, dtype = tf.float32)
+            predicted_values = rewards + self.discount * (newVector) * self.critic_target([next_states, target_actions], training = True)
             
 
             critic_value = self.critic([states, actions], training = True)
@@ -203,17 +209,17 @@ class Agent():
        
     def train(self):
         
-        states, actions, rewards, next_states = self.replayMemory.sample(self.batch_size) 
+        states, actions, rewards, next_states, isTerminals = self.replayMemory.sample(self.batch_size) 
     
         # Convert to Tensorflow data types
         states  = tf.convert_to_tensor(states)
         actions = tf.convert_to_tensor(actions)
         rewards = tf.cast(tf.convert_to_tensor(rewards), dtype = tf.float32)
         next_states = tf.convert_to_tensor(next_states)
-        #isTerminals = tf.cast(tf.convert_to_tensor(isTerminals), dtype = tf.float64)
+        isTerminals = tf.convert_to_tensor(isTerminals)
 
-        # print("calling update")
-        self.update(states, actions, rewards, next_states)
+
+        self.update(states, actions, rewards, next_states, isTerminals)
 
 
     def handleGameEnd(self):
@@ -260,7 +266,7 @@ while (True):
         if (done == True):
             reward = -10.0 # 
 
-        myAgent.replayMemory.append(current_state, action, reward, next_state)
+        myAgent.replayMemory.append(current_state, action, reward, next_state, done)
         
         # Update counters
         myAgent.moveNumber = myAgent.moveNumber + 1
@@ -279,11 +285,10 @@ while (True):
     
 
         if (myAgent.cumulativeReward > maxScore):
-                maxScore = myAgent.cumulativeReward
-                myAgent.actor.save_weights("networks/actor")
-                myAgent.critic.save_weights("networks/critic")
+            maxScore = myAgent.cumulativeReward
+            myAgent.actor.save_weights("networks/actor")
+            myAgent.critic.save_weights("networks/critic")
     
-
 
         current_state = next_state
 

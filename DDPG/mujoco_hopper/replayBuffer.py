@@ -16,10 +16,9 @@ class replayBuffer():
         self.actions = np.zeros((max_size, action_space_size))
         self.rewards = np.zeros((max_size, 1))
         self.next_states = np.zeros((max_size, state_space_size))
-        
-        #self.dones = np.zeros((max_size, 1))
+        self.dones = np.zeros((max_size, 1))
 
-    def append(self, state, action, reward, next_state):
+    def append(self, state, action, reward, next_state, done):
         """Rotating list"""
         
         self.states[self.index] = state     
@@ -27,7 +26,10 @@ class replayBuffer():
         self.rewards[self.index] = reward
         self.next_states[self.index] = next_state
         
-        #self.dones[self.index] = done
+        if (self.dones == True):
+            self.dones[self.index] = 1.0
+        else:
+            self.dones[self.index] = 0.0
 
         self.size = min(self.size + 1, self.max_size)
         self.index = (self.index + 1) % self.max_size
@@ -41,8 +43,7 @@ class replayBuffer():
         rA = self.actions[random_experience_indexes]        
         rR = self.rewards[random_experience_indexes]
         rNS = self.next_states[random_experience_indexes]
-        
-        #rD = self.dones[random_experience_indexes]
+        rD = self.dones[random_experience_indexes]
 
-        return rS, rA, rR, rNS  # , rD
+        return rS, rA, rR, rNS, rD
 
