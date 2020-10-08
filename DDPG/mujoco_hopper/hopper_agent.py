@@ -35,6 +35,8 @@ class Agent():
         self.discount = 0.99
         self.memorySize = 1000000 
         self.batch_size = 100 # Mini batch size for keras .fit method
+        self.explorationSteps = 1000
+        self.trainEvery = 50
 
         self.moveNumber = 0 # Number of actions taken in the current episode 
         self.save = 50 # This describes how often to save each network to disk  
@@ -105,18 +107,12 @@ class Agent():
 
         state_inputs = layers.Input(shape=(self.state_space_size))
         
-        # try this next
         state_stream = layers.BatchNormalization()(state_inputs) # Normalize this?
         state_stream = layers.Dense(400)(state_stream)
         state_stream = layers.BatchNormalization()(state_stream)
         state_stream = layers.Activation("relu")(state_stream)
 
-        #state_stream = layers.Dense(300)(state_stream)
-        #state_stream = layers.BatchNormalization()(state_stream)
-        #state_stream = layers.Activation("relu")(state_stream)
-
         action_inputs = layers.Input(shape = (self.action_space_size) )
-        #action_stream = layers.Dense(300)(action_inputs)
         
         # Merge the two seperate information streams
         merged_stream = layers.Concatenate()([state_stream, action_inputs])
@@ -127,7 +123,7 @@ class Agent():
 
         return tf.keras.Model([state_inputs, action_inputs], outputs)
     
-    """Describe"""
+    """Initialize an Ornstein–Uhlenbeck Process to generate correlated noise"""
     def init_noise_process(self, average, std_dev, theta = 0.15, dt = 0.01, x_start = None):
     
         self.theta = theta
@@ -136,14 +132,16 @@ class Agent():
         self.dt = dt
         self.x_start = x_start
         self.x_prior = np.zeros_like(self.average)
-        # self.reset()
-       
+    
+    """Generate another instance of the Ornstein–Uhlenbeck process"""
     def noise(self):
-        noise = (self.x_prior + self.theta * (self.average - self.x_prior) * self.dt + self.std_dev * np.sqrt(self.dt) * np.random.normal(size=self.average.shape) )
+        noise = (self.x_prior + self.theta * (self.average - self.x_prior) * self.dt + 
+                self.std_dev * np.sqrt(self.dt) * np.random.normal(size=self.average.shape) )
         
         self.x_prior = noise
         return noise
-
+    
+    """End Ornstein–Uhlenbeck process and start a new one"""
     def resetRandomProcess(self):
         std_dev = 0.2 
         self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
@@ -165,10 +163,6 @@ class Agent():
 
         return [np.squeeze(action)]
 
-    
-    # Eager execution is turned on by default in TensorFlow 2. Decorating with tf.function allows
-    # TensorFlow to build a static graph out of the logic and computations in our function.
-    # This provides a large speed up for blocks of code that contain many small TensorFlow operations such as this one.
     @tf.function
     def update(
         self, states, actions, rewards, next_states, isTerminals
@@ -177,19 +171,8 @@ class Agent():
         with tf.GradientTape() as tape:
             
             target_actions = self.actor_target(next_states, training = True)
-            
-            print("The shape of target_actions is " + str(target_actions.shape))
-            
-            # Note the use of the done - element wise multipy?
-            # Shouldn't I be using the isTerminal information to compute the future reward?
-            
-            #print(isTerminals)
-            #print(1 - isTerminals)
-            #print(self.critic_target([next_states, target_actions], training = True))
-        
             newVector = tf.cast(1 - isTerminals, dtype = tf.float32)
-            predicted_values = rewards + self.discount * (newVector) * self.critic_target([next_states, target_actions], training = True)
-            
+            predicted_values = rewards + self.discount * newVector * self.critic_target([next_states, target_actions], training = True)
 
             critic_value = self.critic([states, actions], training = True)
             critic_loss = tf.math.reduce_mean(tf.math.square(predicted_values - critic_value))
@@ -201,8 +184,7 @@ class Agent():
             
             actions2 = self.actor(states, training = True)
             critic_value = self.critic([states, actions2], training = True)
-            # Remember to negate the loss!
-            actor_loss = tf.math.reduce_mean(-1 * critic_value)
+            actor_loss = tf.math.reduce_mean(-1 * critic_value) # Remember to negate the loss!
                 
         actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
         self.actor_optim.apply_gradients(zip(actor_grad, self.actor.trainable_variables))
@@ -218,18 +200,25 @@ class Agent():
         next_states = tf.convert_to_tensor(next_states)
         isTerminals = tf.convert_to_tensor(isTerminals)
 
-
         self.update(states, actions, rewards, next_states, isTerminals)
-
+    
 
     def handleGameEnd(self):
 
-        # I added 1000 to offset the penalty incurred at the end of a game
         print("Game number " + str(self.currentGameNumber) + " ended with a total reward of " + str(self.cumulativeReward + 10))
         allReward.append(self.cumulativeReward)
         self.cumulativeReward = 0
-
         self.currentGameNumber = self.currentGameNumber + 1
+
+    def randomAction(self):
+        # Assumes the action space is symmetric, for each entry in action vector
+        return (np.random.rand(1, self.action_space_size) - self.upperLimit/2.0) * self.upperLimit
+    
+    def saveNetworks(self):
+        self.actor.save_weights("networks/actor")
+        self.critic.save_weights("networks/critic")
+
+
 
 """Polyak averaging from online network to the target network"""
 @tf.function
@@ -254,8 +243,8 @@ while (True):
         totalStep = totalStep + 1
         
         action = []
-        if (totalStep < 10000):
-            action = (np.random.rand(1, 3) - 0.5) * 2
+        if (totalStep < myAgent.explorationSteps):
+            action = myAgent.randomAction()
         else:
             action = myAgent.chooseAction(current_state)[0]
         
@@ -264,7 +253,7 @@ while (True):
     
         # state, action, reward, next_state
         if (done == True):
-            reward = -10.0 # 
+            reward = -10.0 # Does it work without it?
 
         myAgent.replayMemory.append(current_state, action, reward, next_state, done)
         
@@ -275,20 +264,17 @@ while (True):
         if (done == True):
             myAgent.handleGameEnd()
             break
-
-        #if (myAgent.currentGameNumber > 2):
-        if ( (((totalStep + 1) % 50) == 0) and (totalStep > 1000)):
-            for i in range(50):
+        
+        if (((totalStep % myAgent.trainEvery) == 0) and (totalStep > myAgent.explorationSteps)):
+            for i in range(myAgent.trainEvery):
                 myAgent.train()
                 update_target(myAgent.actor_target.variables, myAgent.actor.variables, myAgent.polyak_rate)
                 update_target(myAgent.critic_target.variables, myAgent.critic.variables, myAgent.polyak_rate)
-    
-
+        """
         if (myAgent.cumulativeReward > maxScore):
             maxScore = myAgent.cumulativeReward
-            myAgent.actor.save_weights("networks/actor")
-            myAgent.critic.save_weights("networks/critic")
-    
+            myAgent.saveNetworks()
+        """
 
         current_state = next_state
 

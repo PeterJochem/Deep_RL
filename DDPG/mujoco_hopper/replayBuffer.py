@@ -26,7 +26,7 @@ class replayBuffer():
         self.rewards[self.index] = reward
         self.next_states[self.index] = next_state
         
-        if (self.dones == True):
+        if (done == True):
             self.dones[self.index] = 1.0
         else:
             self.dones[self.index] = 0.0
