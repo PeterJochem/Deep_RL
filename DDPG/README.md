@@ -12,6 +12,8 @@ Below is a gif of the Hopper's learned policy. A video is available at add link 
 
 (matplotlib plots) <br />
 
+Below is a gif of the Cheetah's learned policy. A video is available at add link <br />
+[![](media/cheetah_learned_policy.gif)]
 
 ### Classic Control Environments
 (matplotlib plots) <br />
