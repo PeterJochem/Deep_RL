@@ -1,26 +1,18 @@
-# Description 
-This is an implementation of Double Deep-Q Learning as described in https://arxiv.org/abs/1509.06461. I had implemented Deep Q Learning in the past and wanted to try a slightly more interesting reinforcement learning algorithm. I wanted to implement D-DQN for the Atari brickbreaker environment. As a testing and debugging strategy, I started with the cart-pole environment in order to more quickly tweak my algorithm and be able to to see the results. From the reading I have done online, it should take a day or a few days of training in the Brick-Breaker environment. 
+# Deep Reinforcement Learning
+This repo is a collection of deep reinforcement learning algorithms implemented with Tensorflow and Keras. I think deep reinforcement learning has a lot of promise for robotic manipulation and just find it fascinating. I created a folder for each algorithm I implemented. So far, I have implemented Deep Q Learning (DQN), Double Deep Q Learning (DDQN), and Deep Deterministic Policy Gradients (DDPG). 
 
-# D-DQN
-![DDQN Pseudo Code](images/DDQN_Pseudo_Code.png)
+# Results 
+More details about each algorithm and its results can be found in the README.md for each directory. Here are a few of the highlights so far though.
+#### DDPG
+The Mujoco Physics Simulator (Multi-Joint Dynamics with Contact) has a few OpenAI gym environments for simple robots with continuous control. I implemented DDPG with the same hyper parameters as the original DDPG [paper](https://arxiv.org/abs/1509.02971) and applied it to the Hopper-V2 and Cheetah environments <br />
 
+Below is a gif of the Hopper's learned policy. A video is available at add link <br />
+[![](DDPG/media/hopper_learned_policy.gif)]
 
-# Issues Addressed by Double Deep Q Learning
-Double Deep Q Learning is an improves over DQN by using two neural networks. There is the original online network for choosing actions and then a target network used to evaulate the value of given each action from a given state. The target is updated every k training cycles, where k is a hyperparameter. On the kth training cycle, the weights of the online network are copied to the target network. The online network has its weights updated as usual. We have decoupled the action selection and the value estimation. This has two benefits. 
+Below is a gif of the Cheetah's learned policy. A video is available at add link <br />
+[![](DDPG/media/cheetah_learned_policy.gif)]
 
-One, the target values of our experiences are determined by the target network. This network changes slowly, and so the target values are more stable. In DQN, as soon as we do gradient descent in the weight space of the neural network, we actually change the target values of our experiences and so change the loss function. We have a circular dependency. The target values are computed using the neural network, and the loss function is computed using those target values. So, as we change the weights of the neural network, we change both the target values and the loss function surface which we want to find a local minima of. This causes the network to be relatively unstable. Double Deep Q Learning's target network changes slowly allowing us to move towards a local minima on the same loss surface before changing the surface itself, on the kth training cycle. This helps make our training more stable.
-
-The second improvement that using two networks does is that it mitigates the bias we have for overestimated values. We use the neural network to estimate the values of taking certain actions in certain states. We then choose the action with the greatest estimated value, but this has a strong bias to choosing actions which overestimate the value of a given action. We decouple the action selection and the action evaluation in order to decrease this bias. Re-read and describe this better
-
-
-# Results
-## Brickbreaker 
-Insert Image
-Insert Matplotlib graph of the the learning
-
-## Pong 
-
-## Cart Pole
-
-
+### DDQN on Atari Environments 
+Describe learning from pixels <br />
+Add a gif of the learned policy 
 
