@@ -5,9 +5,8 @@ This is an implementation of Deep Deterministic Policy Gradients as described in
 
 # Results
 ### Mujoco Environments
-The Mujoco Physics Simulator (Multi-Joint Dynamics with Contact) has a few OpenAI gym environments for simple robots with continuous control. I implemented DDPG with the same hyper parameters as the original DDPG [paper](https://arxiv.org/abs/1509.02971) and applied it to the Hopper-V2 and Cheetah environments. 
+The Mujoco Physics Simulator (Multi-Joint Dynamics with Contact) has a few OpenAI gym environments for simple robots with continuous control. I implemented DDPG with the same hyper parameters as the original DDPG [paper](https://arxiv.org/abs/1509.02971) and applied it to the Hopper-V2 and Cheetah environments <br />
 
-<br />
 Below is a gif of the Hopper's learned policy. A video is available at add link <br />
 [![](media/hopper_learned_policy.gif)]
 
