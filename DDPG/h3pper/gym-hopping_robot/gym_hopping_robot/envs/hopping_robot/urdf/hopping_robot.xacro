@@ -1,0 +1,254 @@
+<?xml version="1.0"?>
+<!-- Author: Peter Jochem
+     Email: peterjochem2020@u.northwestern.edu
+     Date: 09/29/2020   -->
+<robot name="hopping_robot" xmlns:xacro="http://ros.org/wiki/xacro">
+	
+	<xacro:property name="torso_width" value="0.4" />
+        <xacro:property name="torso_height" value="0.4" />
+        <xacro:property name="torso_depth" value="0.4" />
+        <xacro:property name="torso_mass" value="1.0" />
+
+	<xacro:property name="link1_length" value="0.4" />
+	<xacro:property name="link1_radius" value="0.05"/>
+	<xacro:property name="link1_mass" value="1.0" />
+	
+	<xacro:property name="link2_length" value="0.4" />
+        <xacro:property name="link2_radius" value="0.05"/>
+        <xacro:property name="link2_mass" value="1.0" />
+
+	<xacro:property name="link3_length" value="0.4" />
+        <xacro:property name="link3_radius" value="0.05"/>
+        <xacro:property name="link3_mass" value="1.0" />
+	
+	<xacro:property name="foot_width" value="0.25" />
+        <xacro:property name="foot_height" value="0.60" />
+        <xacro:property name="foot_depth" value="0.05" />
+	<xacro:property name="foot_mass" value="1.0" />
+		
+	<link name="torso">
+		<visual>
+			<geometry>
+				<box size="${torso_width} ${torso_height} ${torso_depth}" />
+			</geometry>
+		
+			<material name="gray">
+				<!-- color rgba="255 0 0 0.75" /-->
+			</material>
+			<origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+		</visual>
+	
+		<inertial>
+      			<origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+			<mass value = "1.0"/>
+			
+			<!-- Fix the inertia tag-->
+			<inertia ixx="${(1.0/12.0) * torso_mass * ( (torso_height * torso_height) + (torso_depth * torso_depth) ) }" 
+                                 iyy="${(1.0/12.0) * torso_mass * ( (torso_width * torso_width) + (torso_depth * torso_depth) ) }" 
+                                 izz="${(1.0/12.0) * torso_mass * ( (torso_width * torso_width) + (torso_height * torso_height) ) }"/>
+    		</inertial>
+
+		<collision>
+      			<origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+    	  		<geometry>
+        			<box size="${torso_width} ${torso_height} ${torso_depth}" />
+     			</geometry>
+		</collision>        		
+        </link>
+
+	<link name="link1">
+		
+		 <visual>
+                        <geometry>
+				 <cylinder length="${link1_length}" radius="${link1_radius}"/>
+                        </geometry>
+                
+                        <material name="gray">
+                                <!-- color rgba="0 255 0 0.4" / -->
+                        </material>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+                </visual>
+        
+                <inertial>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+                        <mass value = "1.0"/>
+
+			<inertia ixx="${ (1.0/12.0) * link1_mass * link1_length * link1_length}" 
+				 iyy="${ (1.0/12.0) * link1_mass * link1_length * link1_length}" 
+				 izz="${ (1.0/12.0) * link1_mass * link1_length * link1_length}" />
+                </inertial>
+
+                <collision>
+			<origin rpy="0 0 0" xyz="0 0 0"/>
+                        <geometry>
+                        	<cylinder length="${link1_length}" radius="${link1_radius}"/>
+                        </geometry>
+                </collision>
+	</link>
+
+	 <link name="link2">
+
+                 <visual>
+                        <geometry>
+                                 <cylinder length="${link2_length}" radius="${link2_radius}"/>
+                        </geometry>
+
+                        <material name="gray">
+                                <!-- color rgba="233 0 255 0.4" / -->
+                        </material>
+			<origin rpy="0 0 0" xyz="0 0 ${-link2_length/2}"/>
+                </visual>
+
+                <inertial>
+                        <origin rpy="0 0 0" xyz="0 0 ${-link2_length/2}"/>
+                        <mass value = "1.0"/>
+
+                        <inertia ixx="${ (1.0/12.0) * link2_mass * link2_length * link2_length}"
+                                 iyy="${ (1.0/12.0) * link2_mass * link2_length * link2_length}"
+                                 izz="${ (1.0/12.0) * link2_mass * link2_length * link2_length}" />
+                </inertial>
+
+                <collision>
+                        <origin rpy="0 0 0" xyz="0 0 ${-link1_length/2}"/>
+                        <geometry>
+                                <cylinder length="${link2_length}" radius="${link2_radius}"/>
+                        </geometry>
+                </collision>
+	</link>
+
+	<link name="link3">
+
+                 <visual>
+                        <geometry>
+                                 <cylinder length="${link3_length}" radius="${link3_radius}"/>
+                        </geometry>
+
+                        <material name="gray">
+                                <!-- color rgba="0 0 255 0.4"/ -->
+                        </material>
+			<origin rpy="0 0 0" xyz="0 0 ${-link3_length/2}"/>
+                </visual>
+
+                <inertial>
+			<origin rpy="0 0 0" xyz="0 0 ${-link3_length/2}"/>
+                        <mass value = "1.0"/>
+
+                        <inertia ixx="${ (1.0/12.0) * link3_mass * link3_length * link3_length}"
+                                 iyy="${ (1.0/12.0) * link3_mass * link3_length * link3_length}"
+                                 izz="${ (1.0/12.0) * link3_mass * link3_length * link3_length}" />
+                </inertial>
+
+                <collision>
+			<origin rpy="0 0 0" xyz="0 0 ${-link2_length/2}"/>
+                        <geometry>
+                                <cylinder length="${link3_length}" radius="${link3_radius}"/>
+                        </geometry>
+                </collision>
+        </link>
+
+
+
+	<link name="foot">
+		<visual>
+                        <geometry>
+				<box size="${foot_width} ${foot_height} ${foot_depth}" />
+                        </geometry>
+
+                        <material name="gray">
+                                <!-- color rgba="0 255 0 0.5" / -->
+                        </material>
+			<origin rpy="0 0 0" xyz="0.0 ${-foot_height/2} 0.0"/>
+                </visual>
+
+                <inertial>
+			<origin rpy="0 0 0" xyz="0.0 ${-foot_height/2} 0.0"/>
+                        <mass value = "1.0"/>
+
+                        <!-- Fix the inertia tag-->
+                        <inertia ixx="${(1.0/12.0) * foot_mass * ( (foot_height * foot_height) + (foot_depth * foot_depth) ) }" 
+                                 iyy="${(1.0/12.0) * foot_mass * ( (foot_width * foot_width) + (foot_depth * foot_depth) ) }" 
+                                 izz="${(1.0/12.0) * foot_mass * ( (foot_width * foot_width) + (foot_height * foot_height) ) }"/>
+                </inertial>
+
+                <collision>
+			<origin rpy="0 0 0" xyz="0.0 ${-foot_height/2} 0.0"/>
+                        <geometry>
+                                <box size="${foot_width} ${foot_height} ${foot_depth}" />
+                        </geometry>
+                </collision>
+        </link>
+	
+	<joint name="torso_leg" type="fixed">
+		<parent link="torso"/>
+                <child link="link1"/>
+		<origin rpy="0 0 0" xyz="0.0 0.0 ${-link1_length/2 - torso_depth/2}"/>
+		<axis xyz="0 0 0"/>
+
+	</joint>
+	
+	<joint name="link1_link2" type="revolute">
+                <origin xyz="0.0 0.0 ${-link1_length/2}" rpy="0 0 0" />
+                <axis xyz = "1 0 0" />
+                <parent link="link1" />
+                <child link="link2" />
+
+                <!-- What to set these to? -->
+                <limit velocity="1.0" effort="10" lower="-1.57" upper="1.57"/>
+	</joint>
+
+	<joint name="link2_link3" type="revolute">
+		<origin xyz="0.0 0.0 ${-link2_length}" rpy="0 0 0" />
+                <axis xyz = "1 0 0" />
+                <parent link="link2" />
+                <child link="link3" />
+
+                <!-- What to set these to? -->
+                <limit velocity="1.0" effort="10" lower="-1.57" upper="1.57"/>
+        </joint>
+
+	
+	<joint name="leg_foot" type="revolute">
+		<origin xyz="0.0 0.0 ${-link3_length - foot_depth/2}" rpy="0 0 0" />
+	  	<axis xyz = "1 0 0" />
+	  	<parent link="link3" />
+		<child link="foot" />
+
+		<!-- What to set these to? -->
+	  	<limit velocity="1.0" effort="10" lower="0.0" upper="1.57"/>
+  	</joint>
+	
+	 <transmission name="leg_foot_trans" type="transmission_interface/SimpleTransmission">
+                <joint name="leg_foot_trans" />
+
+                <actuator name="leg_foot_trans"/>
+
+                <!-- What to set these to? -->
+                <motorInertia>0.0000049</motorInertia>
+                <mechanicalReduction>50</mechanicalReduction>
+        </transmission>
+
+
+	<transmission name="link1_link2_trans" type="transmission_interface/SimpleTransmission">
+                <joint name="link1_link2_trans" />
+
+                <actuator name="link1_link2_trans"/>
+
+                <!-- What to set these to? -->
+                <motorInertia>0.0000049</motorInertia>
+                <mechanicalReduction>50</mechanicalReduction>
+        </transmission>
+
+	<transmission name="link2_link3_trans" type="transmission_interface/SimpleTransmission">
+                <joint name="link2_link3_trans" />
+
+                <actuator name="link2_link3_trans"/>
+
+                <!-- What to set these to? -->
+                <motorInertia>0.0000049</motorInertia>
+                <mechanicalReduction>50</mechanicalReduction>
+        </transmission>
+
+
+
+</robot>
+

@@ -33,6 +33,7 @@ I also implemented DDPG for OpenAI's pendulum environment. The agent can apply a
 ```pip install tensorflow=2.0.0``` Make sure Tensorflow2, not Tensorflow1 is installed <br />
 ```pip install keras``` <br />
 ```pip install gast==0.2.2```  This fixes a issue reported by Tensorflow <br />
+```pip install pybullet```
 
 To setup Mujoco, follow these [instructions](https://www.chenshiyu.top/blog/2019/06/19/Tutorial-Installation-and-Configuration-of-MuJoCo-Gym-Baselines/) but instead of using an Anaconda virtual environment, use a Python virtual environment <br />
 

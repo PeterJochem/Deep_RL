@@ -1,0 +1,1 @@
+from gym_hopping_robot.envs.hopping_robot_env import HoppingRobotEnv
