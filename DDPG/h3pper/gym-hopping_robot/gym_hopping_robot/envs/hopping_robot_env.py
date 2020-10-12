@@ -138,7 +138,9 @@ class HoppingRobotEnv(gym.Env):
     
         # observation = list of joint angles
 
-        return self.computeObservation(), self.computeReward(), self.checkForEnd(), None
+        isOver = self.checkForEnd()
+
+        return self.computeObservation(), self.computeReward(isOver), isOver, None
         # what is info?
         #return observation, reward, done, info
     
@@ -171,7 +173,6 @@ class HoppingRobotEnv(gym.Env):
 
         # could also check the z coordinate of the robot?
         if (abs(roll) > (1.0) or abs(pitch) > (1.0)):
-            #input() 
             self.isOver = True
             return True
 
@@ -183,7 +184,9 @@ class HoppingRobotEnv(gym.Env):
     
     """Read the state of the simulation to compute 
     and return the reward scalar for the agent"""
-    def computeReward(self):
+    def computeReward(self, isOver):
+
+        stillAliveBonus = 1.0
         
         self.robot_position, self.robot_orientation = p.getBasePositionAndOrientation(self.hopper)
         x, y, z = self.robot_position
@@ -198,7 +201,13 @@ class HoppingRobotEnv(gym.Env):
             roll = 0.001
         if (pitch == 0.0):
             pitch = 0.001
-        return ((-1.0/roll) + (-1.0/pitch))/1000.0 
+        
+        #reward = ((-1.0/roll) + (-1.0/pitch))/1000.0 + (10 * x)
+        reward = -y
+        if (isOver == False):
+            reward = reward + stillAliveBonus
+
+        return reward
 
             
 
