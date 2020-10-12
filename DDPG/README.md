@@ -14,7 +14,7 @@ The agent's learned policy is pretty unstable! It has short periods where it hop
 [![](media/hopper_learning2_reward.png)] <br />
 
 
-Below is a gif of the Cheetah's learned policy <br />
+Below is a gif of the Cheetah's learned policy. A video is available [here](https://youtu.be/DQCQSEspLhs) <br />
 [![](media/cheetah_learned_policy.gif)]
 
 ### Classic Control Environments
