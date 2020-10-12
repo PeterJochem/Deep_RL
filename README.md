@@ -1,6 +1,7 @@
 # Deep Reinforcement Learning
 This repo is a collection of deep reinforcement learning algorithms implemented with Tensorflow and Keras. I think deep reinforcement learning has a lot of promise for robotic manipulation and just find it fascinating. I created a folder for each algorithm I implemented. So far, I have implemented Deep Q Learning (DQN), Double Deep Q Learning (DDQN), and Deep Deterministic Policy Gradients (DDPG). 
 
+
 # Results 
 More details about each algorithm and its results can be found in the README.md for each directory. Here are a few of the highlights so far though.
 #### DDPG
