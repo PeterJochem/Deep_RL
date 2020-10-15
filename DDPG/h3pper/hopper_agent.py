@@ -55,7 +55,7 @@ class Agent():
         
         self.polyak_rate = 0.001
         self.action_space_size = 4 # Size of the action vector  
-        self.state_space_size = 4 # Size of the observation vector
+        self.state_space_size = 16 # Size of the observation vector
         
         self.replayMemory = replayBuffer(self.memorySize, self.state_space_size, self.action_space_size)
 
@@ -150,8 +150,8 @@ class Agent():
 
     def chooseAction(self, state):
 
-        #print(state)
         state = tf.expand_dims(tf.convert_to_tensor(state), 0)
+        
         action = self.actor(state)
 
         noise = self.noise()
@@ -258,7 +258,7 @@ while (True):
             reward = -10.0 # Does it work without it?
 
         myAgent.replayMemory.append(current_state, action[0], reward, next_state, done)
-        
+
         # Update counters
         myAgent.moveNumber = myAgent.moveNumber + 1
         myAgent.cumulativeReward = myAgent.cumulativeReward + reward

@@ -5,9 +5,10 @@ import pybullet as p
 import time
 import pybullet_data
 import keras
+import numpy as np
 
 absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
-#absolute_path_neural_net = "/home/peter/Desktop/MSR/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_nets/my_model"  
+absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model"  
 
 class HoppingRobotEnv(gym.Env):       
     
@@ -21,7 +22,7 @@ class HoppingRobotEnv(gym.Env):
         self.jointIds=[]
         self.paramIds=[]
     
-        self.neural_net = None # keras.models.load_model(absolute_path_neural_net)
+        self.neural_net = keras.models.load_model(absolute_path_neural_net)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) #optionally
         p.setGravity(0, 0, -10)
@@ -32,10 +33,7 @@ class HoppingRobotEnv(gym.Env):
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
         self.homePositionAngles = [0.0, 0.0, 0.0]
 
-        print("The number of joints on the hopping robot is " + str(p.getNumJoints(self.hopper)))
-        
         # Setup the debugParam sliders
-        # Why -10, 10, -10
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10) 
         self.homePositionAngles = [0.0, 0.0, 0.0]
         
@@ -83,24 +81,7 @@ class HoppingRobotEnv(gym.Env):
                 self.paramIds.append(p.addUserDebugParameter(jointName.decode("utf-8"), -4, 4, self.homePositionAngles[activeJoint]))
                 p.resetJointState(self.hopper, j, self.homePositionAngles[activeJoint])
                 activeJoint = activeJoint + 1
-
-    """Update robot's PID controller's control signals. controlSignal is a list of desired joint angles (rads).
-    PyBullet does support direct torque control...iterate in this direction eventually?"""
-    def goToHomePosition(self):
-
-        activeJoint = 0
-        for j in range (p.getNumJoints(self.hopper)):
-
-            # Why set the damping factors to 0?
-            p.changeDynamics(self.hopper, j, linearDamping = 0, angularDamping = 0)
-            info = p.getJointInfo(self.hopper, j)
-            jointName = info[1]
-            jointType = info[2]
-
-            if (jointType == p.JOINT_PRISMATIC or jointType == p.JOINT_REVOLUTE):
-                p.resetJointState(self.hopper, j, self.homePositionAngles[activeJoint])
-                activeJoint = activeJoint + 1
-
+     
     """Update robot's PID controller's control signals. controlSignal is a list of desired joint angles (rads).
     PyBullet does support direct torque control...iterate in this direction eventually?"""
     def controller(self, controlSignal):
@@ -110,7 +91,7 @@ class HoppingRobotEnv(gym.Env):
             #targetPos = p.readUserDebugParameter(nextJointId) # This reads from the sliders. Useful for debugging        
             targetPos = controlSignal[i] # This uses the control signal parameter
             p.setJointMotorControl2(self.hopper, self.jointIds[i], p.POSITION_CONTROL, targetPos, force = 75.0) # 100.0
-    
+ 
     """Return the robot to its initial state"""
     def reset(self):
 
@@ -118,9 +99,7 @@ class HoppingRobotEnv(gym.Env):
         self.jointIds=[]
         self.paramIds=[]
         p.removeAllUserParameters() # Must remove and replace
-        self.goToHomePosition()
-        p.restoreState(self.stateId)
-        
+        p.restoreState(self.stateId) 
         self.defineHomePosition()
 
         return self.computeObservation()
@@ -151,16 +130,21 @@ class HoppingRobotEnv(gym.Env):
         
         # Forward prop neural network to get GRF, use that to change the gravity
         # Shoud really compute after every p.stepSimulation
-        # gamma, beta, depth, dx, dy
-        # gamma = velocity through the granular material 
-        # beta = orientation about PyBullet's x axis  
+        ankle_position, ankle_angular_velocity, appliedTorque, foot_y, foot_z, foot_dx, foot_dy, foot_roll, foot_pitch, foot_yaw = self.getFootState()           
+        #x, y, z = foot_position[0]
+        #print(foot_position)
+        #wx, wy, wz = foot_position[1]
+        #dx, dy, dz = foot_velocity
+        #grf_x, grf_y, grf_z = foot_reaction_forces # Are these always non-zero if foot is not in contact?
+
+        #gamma = np.sqrt(dy**2 + dz**2) 
+        # beta =    
         #force_x, force_z = self.computeGRF()
 
-        #p.getCameraImage(320, 200)
+        p.getCameraImage(320, 200) # Make it much faster by turning this off
         #self.defineHomePosition()
     
         # Forward prop neural network to get GRF, use that to change the gravity
-        # FIX ME
         #p.getCameraImage(320, 200)
         #p.setGravity(0, 0, p.readUserDebugParameter(self.gravId))
 
@@ -172,39 +156,39 @@ class HoppingRobotEnv(gym.Env):
             # p.applyExternalForce(self.hopper, foot_index, [0, 0, -100.0], [0.0, 0.0, 0.0], p.LINK_FRAME)
             p.stepSimulation()
             self.planarConstraint()
-    
-        
-        # observation = list of joint angles
+     
         isOver = self.checkForEnd()
         return self.computeObservation(), self.computeReward(isOver), isOver, None
-    
+     
     def getFootState(self):
-            
-        foot_joint_index = 3 # Known by printing world frame position of links with p.getLinkState(self.hopper, <index#>)
-        foot_position, foot_velocity, foot_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [foot_joint_index])[0]
-        # what is info?
-        #return observation, reward, done, info
-    
-    def getFootState(self):
-            
-        foot_joint_index = 1 # True for old robot but not the new one
-        foot_position, foot_velocity, foot_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [foot_joint_index])[0]
-
-        #print(p.getJointStates(self.hopper, [foot_joint_index]))
-        return foot_position, foot_velocity, foot_reaction_forces, appliedTorque
         
+        """Server keeps two lists. One of links and one of joints. These are the indexes into those lists"""
+        ankle_joint_index = 3 # Known by printing world frame position of links with p.getLinkState(self.hopper, <index#>)
+        foot_link_index = 3
+
+        ankle_position, ankle_angular_velocity, ankle_joint_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [ankle_joint_index])[0]
+             
+         
+        world_pos, orientation, localInertialFramePosition, localInertialFrameOrientation, worldLinkFramePosition, worldLinkFrameOrientation, worldLinkLinearVelocity, worldLinkAngularVelocity = p.getLinkState(self.hopper, foot_link_index, 1)
+        
+        foot_roll, foot_pitch, foot_yaw = p.getEulerFromQuaternion(self.robot_orientation)
+
+        foot_y = world_pos[1]
+        foot_z = world_pos[2]
+        
+        foot_dx, foot_dy, foot_dz = worldLinkLinearVelocity
+
+        return ankle_position, ankle_angular_velocity, appliedTorque, foot_y, foot_z, foot_dx, foot_dy, foot_roll, foot_pitch, foot_yaw
 
     def computeObservation(self):
 
         self.robot_position, self.robot_orientation = p.getBasePositionAndOrientation(self.hopper)
-        roll, pitch, yaw = p.getEulerFromQuaternion(self.robot_orientation)
-        x, y, z = self.robot_position
+        base_roll, base_pitch, base_yaw = p.getEulerFromQuaternion(self.robot_orientation)
+        base_x, base_y, base_z = self.robot_position
         
-        foot_angle, foot_velocity, foot_reaction_forces, appliedTorque = self.getFootState() 
+        ankle_position, ankle_angular_velocity, appliedTorque, foot_y, foot_z, foot_dx, foot_dy, foot_roll, foot_pitch, foot_yaw = self.getFootState() 
 
-        # Should I give it the x, y, z too?
-        # FIX ME!!!!!
-        return [foot_angle, roll, pitch, yaw]  
+        return [base_roll, base_pitch, base_yaw, base_x, base_y, base_z, ankle_position, ankle_angular_velocity, appliedTorque, foot_y, foot_z, foot_dx, foot_dy, foot_roll, foot_pitch, foot_yaw]  
 
     def checkForEnd(self):
 

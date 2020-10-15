@@ -104,16 +104,16 @@
       <material name="gray">
         <!-- color rgba="0 255 0 0.5" / -->
       </material>
-      <origin rpy="0 0 0" xyz="0.0 -0.3 0.0"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
     </visual>
     <inertial>
-      <origin rpy="0 0 0" xyz="0.0 -0.3 0.0"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
       <mass value="1.0"/>
       <!-- Fix the inertia tag-->
       <inertia ixx="0.0302083333333" iyy="0.00541666666667" izz="0.0352083333333"/>
     </inertial>
     <collision>
-      <origin rpy="0 0 0" xyz="0.0 -0.3 0.0"/>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
       <geometry>
         <box size="0.25 0.6 0.05"/>
       </geometry>
@@ -147,7 +147,7 @@
     <parent link="link3"/>
     <child link="foot"/>
     <!-- What to set these to? -->
-    <limit effort="10" lower="0.0" upper="1.57" velocity="1.0"/>
+    <limit effort="10" lower="-1.57" upper="1.57" velocity="1.0"/>
   </joint>
   <transmission name="leg_foot_trans" type="transmission_interface/SimpleTransmission">
     <joint name="leg_foot_trans"/>
