@@ -6,8 +6,8 @@ import time
 import pybullet_data
 import keras
 
-absolute_path_urdf = "/home/peter/Desktop/MSR/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
-absolute_path_neural_net = "/home/peter/Desktop/MSR/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_nets/my_model"  
+absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
+#absolute_path_neural_net = "/home/peter/Desktop/MSR/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_nets/my_model"  
 
 class HoppingRobotEnv(gym.Env):       
     
@@ -21,13 +21,16 @@ class HoppingRobotEnv(gym.Env):
         self.jointIds=[]
         self.paramIds=[]
     
-        self.neural_net = keras.models.load_model(absolute_path_neural_net)
+        self.neural_net = None # keras.models.load_model(absolute_path_neural_net)
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) #optionally
         p.setGravity(0, 0, -10)
 
         p.loadURDF("plane.urdf")
         self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.5], useFixedBase = False)
+        
+        self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
+        self.homePositionAngles = [0.0, 0.0, 0.0]
 
         print("The number of joints on the hopping robot is " + str(p.getNumJoints(self.hopper)))
         
@@ -117,7 +120,9 @@ class HoppingRobotEnv(gym.Env):
         p.removeAllUserParameters() # Must remove and replace
         self.goToHomePosition()
         p.restoreState(self.stateId)
-    
+        
+        self.defineHomePosition()
+
         return self.computeObservation()
 
     def computeGRF(self, gamma, beta, depth, dx, dy):
@@ -156,8 +161,8 @@ class HoppingRobotEnv(gym.Env):
     
         # Forward prop neural network to get GRF, use that to change the gravity
         # FIX ME
-        p.getCameraImage(320, 200)
-        p.setGravity(0, 0, p.readUserDebugParameter(self.gravId))
+        #p.getCameraImage(320, 200)
+        #p.setGravity(0, 0, p.readUserDebugParameter(self.gravId))
 
         # Step forward some finite number of seconds or milliseconds
         self.controller(action[0])
@@ -165,12 +170,10 @@ class HoppingRobotEnv(gym.Env):
             foot_index = 3     
             # Must call this each time we stepSimulation
             # p.applyExternalForce(self.hopper, foot_index, [0, 0, -100.0], [0.0, 0.0, 0.0], p.LINK_FRAME)
-            
             p.stepSimulation()
             self.planarConstraint()
-        for i in range (10):
-                p.stepSimulation()
-
+    
+        
         # observation = list of joint angles
         isOver = self.checkForEnd()
         return self.computeObservation(), self.computeReward(isOver), isOver, None
@@ -200,6 +203,7 @@ class HoppingRobotEnv(gym.Env):
         foot_angle, foot_velocity, foot_reaction_forces, appliedTorque = self.getFootState() 
 
         # Should I give it the x, y, z too?
+        # FIX ME!!!!!
         return [foot_angle, roll, pitch, yaw]  
 
     def checkForEnd(self):
@@ -233,4 +237,8 @@ class HoppingRobotEnv(gym.Env):
         
         # Remember the actions are the joint angles, not the joint torques
         reward = dy + y  
-         
+        if (isOver == False):
+            reward = reward + stillAliveBonus 
+
+        return reward
+
