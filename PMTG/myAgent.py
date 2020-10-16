@@ -4,10 +4,11 @@ import gym
 import tensorflow as tf
 from tensorflow.keras import layers
 import numpy as np
-import gym_hopping_robot
 import matplotlib.pyplot as plt
 from tensorflow.keras import regularizers
 from tensorflow import keras
+from optimalPath import optimalPath 
+import TG 
 
 allReward = [] # List of rewards over time, for logging and visualization
 useNoise = True
@@ -34,9 +35,9 @@ class Agent():
      
         # Hyper-parameters
         self.discount = 0.99
-        self.memorySize = 100000
-        self.batch_size = 64 # Mini batch size for keras .fit method
-        self.explorationSteps = 101
+        self.memorySize = 1000000 
+        self.batch_size = 100 # Mini batch size for keras .fit method
+        self.explorationSteps = 1000
         self.trainEvery = 50
 
         self.moveNumber = 0 # Number of actions taken in the current episode 
@@ -45,17 +46,17 @@ class Agent():
         self.currentGameNumber = 0 
         self.cumulativeReward = 0 # Current game's total reward
         
-        # These parameters are Specefic to the  H3pper Robot with position control
-        self.max_control_signal = 3.14
-        self.lowerLimit = -3.14 # -180 - 180 # Or 3.14?
-        self.upperLimit =  3.14
-
-        self.env = gym.make('hopping_robot-v0')
-        self.state = self.env.reset()
+        # These parameters are specefic to the environment
+        self.max_control_signal = 1.0
+        self.lowerLimit = -1.0
+        self.upperLimit = 1.0
         
+        self.desiredPath = optimalPath()
+        
+
         self.polyak_rate = 0.001
-        self.action_space_size = 4 # Size of the action vector  
-        self.state_space_size = 18 # Size of the observation vector
+        self.action_space_size = 2 # Size of the action vector  
+        self.state_space_size = 2 # Size of the observation vector
         
         self.replayMemory = replayBuffer(self.memorySize, self.state_space_size, self.action_space_size)
 
@@ -69,8 +70,8 @@ class Agent():
         self.critic_target.set_weights(self.critic.get_weights())
         
         # Actor's learning rate should be smaller
-        self.critic_learning_rate = 0.0001
-        self.actor_learning_rate = 0.00001
+        self.critic_learning_rate = 0.001
+        self.actor_learning_rate = 0.0001
 
         self.critic_optim = tf.keras.optimizers.Adam(self.critic_learning_rate)
         self.actor_optim = tf.keras.optimizers.Adam(self.actor_learning_rate)
@@ -151,7 +152,6 @@ class Agent():
     def chooseAction(self, state):
 
         state = tf.expand_dims(tf.convert_to_tensor(state), 0)
-        
         action = self.actor(state)
 
         noise = self.noise()
@@ -219,7 +219,15 @@ class Agent():
     def saveNetworks(self):
         self.actor.save_weights("networks/actor")
         self.critic.save_weights("networks/critic")
+    
+    def step(self, action):
+        
+        nextState = self.desiredPath.step()
+        reward = self.desiredPath.reward(action)   
+        isDone = self.desiredPath.isDone()
+        info = None
 
+        return nextState, reward, isDone, info 
 
 
 """Polyak averaging from online network to the target network"""
@@ -236,29 +244,29 @@ myAgent = Agent()
 totalStep = 0
 
 while (True): 
-    current_state = myAgent.env.reset()
+    
+    current_state = myAgent.desiredPath.reset()
     myAgent.resetRandomProcess()
 
     while(True):
-        myAgent.env.render()
-
         totalStep = totalStep + 1
         
         action = []
         if (totalStep < myAgent.explorationSteps):
-            action = myAgent.randomAction()
+            action = myAgent.randomAction().squeeze()
         else:
-            action = myAgent.chooseAction(current_state)
-
+            action = myAgent.chooseAction(current_state)[0]
+        
+        
         # observation, reward, done, info
-        next_state, reward, done, info = myAgent.env.step(action)
+        next_state, reward, done, info = myAgent.step(action)
     
         # state, action, reward, next_state
         if (done == True):
             reward = -10.0 # Does it work without it?
 
-        myAgent.replayMemory.append(current_state, action[0], reward, next_state, done)
-
+        myAgent.replayMemory.append(current_state, action, reward, next_state, done)
+        
         # Update counters
         myAgent.moveNumber = myAgent.moveNumber + 1
         myAgent.cumulativeReward = myAgent.cumulativeReward + reward
@@ -272,12 +280,8 @@ while (True):
                 myAgent.train()
                 update_target(myAgent.actor_target.variables, myAgent.actor.variables, myAgent.polyak_rate)
                 update_target(myAgent.critic_target.variables, myAgent.critic.variables, myAgent.polyak_rate)
-        """
-        if (myAgent.cumulativeReward > maxScore):
-            maxScore = myAgent.cumulativeReward
-            myAgent.saveNetworks()
-        """
-
+    
+        
         current_state = next_state
 
             

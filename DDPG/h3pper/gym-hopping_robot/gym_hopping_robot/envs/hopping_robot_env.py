@@ -104,13 +104,16 @@ class HoppingRobotEnv(gym.Env):
 
         return self.computeObservation()
 
-    def computeGRF(self, gamma, beta, depth, dx, dy):
+    def computeGRF(self, gamma, beta, depth, dx, dy, dz):
         
-        inVector = [gamma, beta, depth, dx, dy]
-        grf = self.neural_net.predict(inVector)
+        # Current: [gamma, beta, velocity_x, velocity_y, velocity_z] Be careful with how frames are defined in PyBullet vs Chrono
+        # Desired: [gamma, beta, depth, velocity_x, velocity_y, velocity_z]
+        inVector = [gamma, beta, dx, dy, dz]
         
-        # reformat grf before returning it?
-        return 
+        # Be careful with how you define the frames
+        grf_y, grf_z = self.neural_net.predict(inVector)[0]
+        
+        return grf_y, grf_z
         
     """ After stepping the simulation, force the robot to be in the y-z plane
     A bit too hacky? Well, planar physics is well, hacky anyways""" 
@@ -130,30 +133,27 @@ class HoppingRobotEnv(gym.Env):
         
         # Forward prop neural network to get GRF, use that to change the gravity
         # Shoud really compute after every p.stepSimulation
-        ankle_position, ankle_angular_velocity, appliedTorque, foot_y, foot_z, foot_dx, foot_dy, foot_roll, foot_pitch, foot_yaw = self.getFootState()           
-        #x, y, z = foot_position[0]
-        #print(foot_position)
-        #wx, wy, wz = foot_position[1]
-        #dx, dy, dz = foot_velocity
-        #grf_x, grf_y, grf_z = foot_reaction_forces # Are these always non-zero if foot is not in contact?
+        ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw = self.getFootState()           
+        
 
-        #gamma = np.sqrt(dy**2 + dz**2) 
-        # beta =    
-        #force_x, force_z = self.computeGRF()
+        #depth = plate_bottom_z - bed_z
+        gamma = np.sqrt(foot_dy**2 + foot_dz**2) 
+        beta = foot_roll
+        
+        #if(above bed) # no grf 
+        # else if (in bed) manually set the grf
+        # else if (on bottom) let grf be PyBullet defined
 
+        # grf_y, grf_z = self.computeGRF(gamma, beta, depth, foot_dx, foot_dy, foot_dz)
+          
         p.getCameraImage(320, 200) # Make it much faster by turning this off
-        #self.defineHomePosition()
     
-        # Forward prop neural network to get GRF, use that to change the gravity
-        #p.getCameraImage(320, 200)
-        #p.setGravity(0, 0, p.readUserDebugParameter(self.gravId))
-
         # Step forward some finite number of seconds or milliseconds
         self.controller(action[0])
         for i in range (3):
             foot_index = 3     
             # Must call this each time we stepSimulation
-            # p.applyExternalForce(self.hopper, foot_index, [0, 0, -100.0], [0.0, 0.0, 0.0], p.LINK_FRAME)
+            # p.applyExternalForce(self.hopper, foot_index, [0, grf_y, grf_z], [0.0, 0.0, 0.0], p.LINK_FRAME) # Where on the foot to apply the force?
             p.stepSimulation()
             self.planarConstraint()
      
@@ -173,12 +173,10 @@ class HoppingRobotEnv(gym.Env):
         
         foot_roll, foot_pitch, foot_yaw = p.getEulerFromQuaternion(self.robot_orientation)
 
-        foot_y = world_pos[1]
-        foot_z = world_pos[2]
-        
+        foot_x, foot_y, foot_z = world_pos
         foot_dx, foot_dy, foot_dz = worldLinkLinearVelocity
 
-        return ankle_position, ankle_angular_velocity, appliedTorque, foot_y, foot_z, foot_dx, foot_dy, foot_roll, foot_pitch, foot_yaw
+        return ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw
 
     def computeObservation(self):
 
@@ -186,18 +184,24 @@ class HoppingRobotEnv(gym.Env):
         base_roll, base_pitch, base_yaw = p.getEulerFromQuaternion(self.robot_orientation)
         base_x, base_y, base_z = self.robot_position
         
-        ankle_position, ankle_angular_velocity, appliedTorque, foot_y, foot_z, foot_dx, foot_dy, foot_roll, foot_pitch, foot_yaw = self.getFootState() 
+        ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw = self.getFootState() 
 
-        return [base_roll, base_pitch, base_yaw, base_x, base_y, base_z, ankle_position, ankle_angular_velocity, appliedTorque, foot_y, foot_z, foot_dx, foot_dy, foot_roll, foot_pitch, foot_yaw]  
+        return [base_roll, base_pitch, base_yaw, base_x, base_y, base_z, ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw]  
 
     def checkForEnd(self):
 
         self.robot_position, self.robot_orientation = p.getBasePositionAndOrientation(self.hopper)
         roll, pitch, yaw = p.getEulerFromQuaternion(self.robot_orientation)
 
+        x, y, z = self.robot_position
+
         # could also check the z coordinate of the robot?
+        """
         if (abs(roll) > (1.0) or abs(pitch) > (1.0)):
             self.isOver = True
+            return True
+        """
+        if (z < 0.5):
             return True
 
         return False
