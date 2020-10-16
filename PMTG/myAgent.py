@@ -8,10 +8,12 @@ import matplotlib.pyplot as plt
 from tensorflow.keras import regularizers
 from tensorflow import keras
 from optimalPath import optimalPath 
-import TG 
+from TG import TG 
 
 allReward = [] # List of rewards over time, for logging and visualization
-useNoise = True
+
+# FIX ME - I turned the noise off
+useNoise = False
 
 maxScore = -10000
 
@@ -37,7 +39,7 @@ class Agent():
         self.discount = 0.99
         self.memorySize = 1000000 
         self.batch_size = 100 # Mini batch size for keras .fit method
-        self.explorationSteps = 1000
+        self.explorationSteps = 101
         self.trainEvery = 50
 
         self.moveNumber = 0 # Number of actions taken in the current episode 
@@ -47,17 +49,22 @@ class Agent():
         self.cumulativeReward = 0 # Current game's total reward
         
         # These parameters are specefic to the environment
-        self.max_control_signal = 1.0
-        self.lowerLimit = -1.0
-        self.upperLimit = 1.0
+        self.max_control_signal = 10.0
+        self.lowerLimit = -10.0
+        self.upperLimit = 10.0
         
         self.desiredPath = optimalPath()
         
+        # FIX ME - I seeded the starting a_x, a_y for the TG
+        self.TG = TG(8, 0.5)  
 
         self.polyak_rate = 0.001
-        self.action_space_size = 2 # Size of the action vector  
-        self.state_space_size = 2 # Size of the observation vector
+        self.action_space_size = 4 # Size of the action vector  
+        # [a_x, a_y, u_x, u_y] 
         
+        self.state_space_size = 5 # Size of the observation vector
+        # [time, a_x, a_y, agent's_x, agent's_y]
+
         self.replayMemory = replayBuffer(self.memorySize, self.state_space_size, self.action_space_size)
 
         self.actor = self.defineActor()
@@ -149,17 +156,30 @@ class Agent():
         self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
 
 
-    def chooseAction(self, state):
+    def chooseAction(self, state, time):
 
         state = tf.expand_dims(tf.convert_to_tensor(state), 0)
-        action = self.actor(state)
+        
+        u_tg = self.TG.U_TG(time)
+        
+        nextX = self.actor(state).numpy().squeeze()[2] + u_tg[0] 
+        nextY = self.actor(state).numpy().squeeze()[3] + u_tg[1]
+        
+        action = np.zeros(4) # [Tg's a_x, TG's a_y, nextX, nextY]
+        
+        action[0] = u_tg[0]  
+        action[1] = u_tg[1]
+        action[2] = nextX
+        action[3] = nextY
 
-        noise = self.noise()
-        if (useNoise == True):
-            action = action.numpy() + noise
-        else:
-            action = action.numpy()
 
+        """I turned the noise off for PMTG"""
+        #noise = self.noise()
+        #if (useNoise == True):
+        #    action = action.numpy() + noise
+        #else:
+            #action = action.numpy()
+    
         # Make sure action is withing legal range
         action = np.clip(action, self.lowerLimit, self.upperLimit)
 
@@ -194,7 +214,7 @@ class Agent():
     def train(self):
         
         states, actions, rewards, next_states, isTerminals = self.replayMemory.sample(self.batch_size) 
-    
+        
         # Convert to Tensorflow data types
         states  = tf.convert_to_tensor(states)
         actions = tf.convert_to_tensor(actions)
@@ -222,7 +242,11 @@ class Agent():
     
     def step(self, action):
         
-        nextState = self.desiredPath.step()
+        nextState = self.desiredPath.step(self.TG)
+
+        self.TG.a_x = action[0]
+        self.TG.a_y = action[1]
+
         reward = self.desiredPath.reward(action)   
         isDone = self.desiredPath.isDone()
         info = None
@@ -245,17 +269,19 @@ totalStep = 0
 
 while (True): 
     
-    current_state = myAgent.desiredPath.reset()
+    time = 0
+    current_state = myAgent.desiredPath.reset(myAgent.TG)
     myAgent.resetRandomProcess()
 
     while(True):
         totalStep = totalStep + 1
         
+        #print(time)
         action = []
-        if (totalStep < myAgent.explorationSteps):
-            action = myAgent.randomAction().squeeze()
-        else:
-            action = myAgent.chooseAction(current_state)[0]
+        #if (totalStep < myAgent.explorationSteps):
+        #    action = myAgent.randomAction().squeeze()
+        #else:
+        action = myAgent.chooseAction(current_state, time)[0]
         
         
         # observation, reward, done, info
@@ -283,5 +309,6 @@ while (True):
     
         
         current_state = next_state
+        time = time + 1
 
             

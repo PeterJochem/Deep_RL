@@ -44,33 +44,35 @@ class optimalPath:
         plt.scatter(self.x, self.y)
         plt.show()
 
-    def reset(self):
+    def reset(self, TG):
         
-        self.curretIndex = 0
+        self.currentIndex = 0
 
         self.a_x = self.a_x_start
         self.a_y = self.a_y_start
         
-        return self.x[0], self.y[0]
+        return self.currentIndex, self.x[self.currentIndex], self.y[self.currentIndex], TG.a_x, TG.a_y
 
     def reward(self, action):
         
-        print(action)
+        #print(action)
         agent_x = action[0]
         agent_y = action[1]
         current_x, current_y = self.x[self.currentIndex], self.y[self.currentIndex] 
 
-        return np.sqrt(((agent_x - current_x)**2) + ((agent_y - current_y)**2)) 
+        return -np.sqrt(((agent_x - current_x)**2) + ((agent_y - current_y)**2)) 
             
-    def step(self):
+    def step(self, TG):
         
         self.currentIndex = self.currentIndex + 1
-        return self.x[self.currentIndex], self.y[self.currentIndex]       
+        # [time, agent's_x, agent's_y, TG's a_x, TG's a_y] 
+        
+        return self.currentIndex, self.x[self.currentIndex], self.y[self.currentIndex], TG.a_x, TG.a_y       
 
 
     def isDone(self):
 
-        if (self.currentIndex >= self.numPts):
+        if (self.currentIndex >= self.numPts - 2):
             return True
         return False
     
