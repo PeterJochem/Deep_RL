@@ -4,16 +4,15 @@ This repo is a collection of deep reinforcement learning algorithms implemented 
 
 # Results 
 More details about each algorithm and its results can be found in the README.md for each directory. Here are a few of the highlights so far though.
-#### DDPG
+## DDPG
 The Mujoco Physics Simulator (Multi-Joint Dynamics with Contact) has a few OpenAI gym environments for simple robots with continuous control. I implemented DDPG with the same hyper parameters as the original DDPG [paper](https://arxiv.org/abs/1509.02971) and applied it to the Hopper-V2 and Cheetah environments. The Hopper and Cheetah environments feature robots who must learn what torques to apply to their motors in order to produce forward translation. <br />
 
 Below is a gif of the Hopper's learned policy. A video is available [here](https://youtu.be/E0tvLX5sxv0?t=281) <br />
 [![](DDPG/media/hopper_learned_policy.gif)]
 
 Below is a gif of the Cheetah's learned policy. A video is available [here](https://youtu.be/DQCQSEspLhs) <br />
-[![](DDPG/media/cheetah_learned_policy.gif)]
+[![](DDPG/media/cheetah2.gif)]
 
-### DDQN on Atari Environments 
-Describe learning from pixels <br />
-Add a gif of the learned policy 
+## DDQN on Atari Environments 
+I am in the process of implementing RL algorithms with convolutional neural networks to run on the Atari gym environments. This is where I will give a brief description and gif of those results. 
 
