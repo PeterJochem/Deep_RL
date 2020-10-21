@@ -1,5 +1,5 @@
 # Deep Reinforcement Learning
-This repo is a collection of deep reinforcement learning algorithms implemented with Tensorflow and Keras. I think deep reinforcement learning has a lot of promise for robotic manipulation and just find it fascinating. I created a folder for each algorithm I implemented. So far, I have implemented Deep Q Learning (DQN), Double Deep Q Learning (DDQN), and Deep Deterministic Policy Gradients (DDPG). 
+This repo is a collection of deep reinforcement learning algorithms implemented with Tensorflow and Keras. I think deep reinforcement learning has a lot of promise for robotic manipulation and just find it fascinating. I created a folder for each algorithm I implemented. So far, I have implemented Deep Q Learning (DQN), Double Deep Q Learning (DDQN), and Deep Deterministic Policy Gradients (DDPG). I also created a custom OpenAI gym environment of a hopping robot on soft ground. 
 
 
 # Results 
@@ -12,6 +12,12 @@ Below is a gif of the Hopper's learned policy. A video is available [here](https
 
 Below is a gif of the Cheetah's learned policy. A video is available [here](https://youtu.be/DQCQSEspLhs) <br />
 [![](DDPG/media/cheetah2.gif)]
+
+
+### Custom OpenAI Gym Environment in PyBullet
+I created my own custom gym environment in PyBullet. I wanted to simulate a hopping robot walking on soft ground. PyBullet does not support granular materials in this sense so I simulated the robot's foot interacting with granular materials in Chrono, gathered a dataset, and trained a neural network to map the robot's state to the ground reaction forces and moments of torque. I then used this neural network to apply forces and torques on the robot's foot as it interacted with the bed of granular material. I still need to add a way to visualize where in space the granular material is. Below is an image of the robot in its home position. More details can be found in the h3pper directory. <br />
+[![](DDPG/h3pper/gym-hopping_robot/images/start_position.png)]
+
 
 ## DDQN on Atari Environments 
 I am in the process of implementing RL algorithms with convolutional neural networks to run on the Atari gym environments. This is where I will give a brief description and gif of those results. 
