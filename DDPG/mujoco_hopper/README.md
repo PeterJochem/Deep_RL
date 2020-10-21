@@ -4,6 +4,6 @@ The Mujoco Physics Simulator (Multi-Joint Dynamics with Contact) has a few OpenA
 The agent's learned policy is pretty unstable! It has short periods where it hops really well but then some weight updates push it toward pretty poor gaits. The neural networks are pretty shallow right now. Hopefully a larger network would be more robust. Another approach could be to reduce the action space noise or to move away from action space noise and instead use parameter space noise. Below is the agent's cumulatative reward per episode of training. The agent's learned policy is pretty unstable! It has short periods where it hops really well but then some weight updates push it toward pretty poor gaits. The neural networks are pretty shallow right now. Hopefully a larger network would be more robust. Another approach could be to reduce the action space noise or to move away from action space noise and instead use parameter space noise. A video of the Hopper learning is available [here](https://youtu.be/E0tvLX5sxv0?t=281). <br />
 Learned Policy             |  Reward Per Epoch over Time
 :-------------------------:|:-------------------------:
-[![](../media/hopper_learned_policy.gif)]  | [![](../media/hopper_learning2_reward.png)]
+![](../media/hopper_learned_policy.gif)  | ![](../media/hopper_learning2_reward.png)
 
 <br />
