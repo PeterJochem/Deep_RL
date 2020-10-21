@@ -37,6 +37,7 @@ class Agent():
         self.batch_size = 100 # Mini batch size for keras .fit method
         self.explorationSteps = 1000
         self.trainEvery = 50
+        self.policy_delay = 2
 
         self.moveNumber = 0 # Number of actions taken in the current episode 
         self.save = 50 # This describes how often to save each network to disk  
@@ -61,17 +62,22 @@ class Agent():
         self.actor = self.defineActor()
         self.actor_target = self.defineActor()
         
-        self.critic = self.defineCritic()
-        self.critic_target = self.defineCritic()
+        self.critic_a = self.defineCritic()
+        self.critic_target_a = self.defineCritic()
+
+        self.critic_b = self.defineCritic()
+        self.critic_target_b = self.defineCritic()
 
         self.actor_target.set_weights(self.actor.get_weights())
-        self.critic_target.set_weights(self.critic.get_weights())
-        
+        self.critic_target_a.set_weights(self.critic_a.get_weights())
+        self.critic_target_b.set_weights(self.critic_b.get_weights())
+
         # Actor's learning rate should be smaller
         self.critic_learning_rate = 0.001
         self.actor_learning_rate = 0.0001
 
-        self.critic_optim = tf.keras.optimizers.Adam(self.critic_learning_rate)
+        self.critic_a_optim = tf.keras.optimizers.Adam(self.critic_learning_rate)
+        self.critic_b_optim = tf.keras.optimizers.Adam(self.critic_learning_rate)
         self.actor_optim = tf.keras.optimizers.Adam(self.actor_learning_rate)
 
         # Random Process Hyper parameters
@@ -164,32 +170,49 @@ class Agent():
         return [np.squeeze(action)]
 
     @tf.function
-    def update(
+    def update_critics(
         self, states, actions, rewards, next_states, isTerminals
     ): 
     
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent = True) as tape:
             
             target_actions = self.actor_target(next_states, training = True)
             newVector = tf.cast(1 - isTerminals, dtype = tf.float32)
-            predicted_values = rewards + self.discount * newVector * self.critic_target([next_states, target_actions], training = True)
+            
+            predicted_values_1 = rewards + self.discount * newVector * self.critic_target_a([next_states, target_actions], training = True)
+            predicted_values_2 = rewards + self.discount * newVector * self.critic_target_b([next_states, target_actions], training = True)
+    
+            predicted_values = tf.math.minimum(predicted_values_1, predicted_values_2)
+            predicted_values = tf.convert_to_tensor(predicted_values)    
+        
+            critic_a_value = self.critic_a([states, actions], training = True)
+            critic_b_value = self.critic_b([states, actions], training = True)
+        
+            critic_a_loss = tf.math.reduce_mean(tf.math.square(predicted_values - critic_a_value))
+            critic_b_loss = tf.math.reduce_mean(tf.math.square(predicted_values - critic_b_value))
 
-            critic_value = self.critic([states, actions], training = True)
-            critic_loss = tf.math.reduce_mean(tf.math.square(predicted_values - critic_value))
+        critic_a_grad = tape.gradient(critic_a_loss, self.critic_a.trainable_variables)
+        critic_b_grad = tape.gradient(critic_b_loss, self.critic_b.trainable_variables)
+        
+        self.critic_a_optim.apply_gradients(zip(critic_a_grad, self.critic_a.trainable_variables))
+        self.critic_b_optim.apply_gradients(zip(critic_b_grad, self.critic_b.trainable_variables))
 
-        critic_grad = tape.gradient(critic_loss, self.critic.trainable_variables)
-        self.critic_optim.apply_gradients(zip(critic_grad, self.critic.trainable_variables))
+       
+    @tf.function
+    def update_actor(
+        self, states, actions, rewards, next_states, isTerminals
+    ):
 
         with tf.GradientTape() as tape:
-            
-            actions2 = self.actor(states, training = True)
-            critic_value = self.critic([states, actions2], training = True)
-            actor_loss = tf.math.reduce_mean(-1 * critic_value) # Remember to negate the loss!
-                
+
+            actor_actions = self.actor(states, training = True)
+            critic_a_value = self.critic_a([states, actor_actions], training = True) # Which critic do I use?
+            actor_loss = tf.math.reduce_mean(-1 * critic_a_value) # Remember to negate the loss!
+
         actor_grad = tape.gradient(actor_loss, self.actor.trainable_variables)
         self.actor_optim.apply_gradients(zip(actor_grad, self.actor.trainable_variables))
-       
-    def train(self):
+
+    def train_actor(self):
         
         states, actions, rewards, next_states, isTerminals = self.replayMemory.sample(self.batch_size) 
     
@@ -200,8 +223,20 @@ class Agent():
         next_states = tf.convert_to_tensor(next_states)
         isTerminals = tf.convert_to_tensor(isTerminals)
 
-        self.update(states, actions, rewards, next_states, isTerminals)
+        self.update_actor(states, actions, rewards, next_states, isTerminals)
     
+    def train_critics(self):
+
+        states, actions, rewards, next_states, isTerminals = self.replayMemory.sample(self.batch_size)
+
+        # Convert to Tensorflow data types
+        states  = tf.convert_to_tensor(states)
+        actions = tf.convert_to_tensor(actions)
+        rewards = tf.cast(tf.convert_to_tensor(rewards), dtype = tf.float32)
+        next_states = tf.convert_to_tensor(next_states)
+        isTerminals = tf.convert_to_tensor(isTerminals)
+
+        self.update_critics(states, actions, rewards, next_states, isTerminals)
 
     def handleGameEnd(self):
 
@@ -267,9 +302,18 @@ while (True):
         
         if (((totalStep % myAgent.trainEvery) == 0) and (totalStep > myAgent.explorationSteps)):
             for i in range(myAgent.trainEvery):
-                myAgent.train()
-                update_target(myAgent.actor_target.variables, myAgent.actor.variables, myAgent.polyak_rate)
-                update_target(myAgent.critic_target.variables, myAgent.critic.variables, myAgent.polyak_rate)
+       
+                myAgent.train_critics()
+        
+                if (i % myAgent.policy_delay == 0):
+                    
+                    myAgent.train_actor()
+                    update_target(myAgent.actor_target.variables, myAgent.actor.variables, myAgent.polyak_rate)
+                    update_target(myAgent.critic_target_a.variables, myAgent.critic_a.variables, myAgent.polyak_rate)
+                    update_target(myAgent.critic_target_b.variables, myAgent.critic_b.variables, myAgent.polyak_rate)
+    
+
+        
         """
         if (myAgent.cumulativeReward > maxScore):
             maxScore = myAgent.cumulativeReward

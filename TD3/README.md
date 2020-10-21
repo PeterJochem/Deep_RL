@@ -16,3 +16,6 @@ TD3 adds noise to the target actions in order to smooth out the Q-functions acro
 
 # TD3 Psuedocode
 ![](media/TD3_Pseudocode.png)
+
+# Results 
+Wow! The agent does learn much faster than the DDPG agent. 
