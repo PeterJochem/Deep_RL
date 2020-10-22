@@ -301,7 +301,7 @@ def main():
     # Create a datset object with all our data
     #dataFile = "../../dataSets/dset3/allData/compiledSet.csv"
     
-    dataFile = "../../dataSets/dset3/intrude_dset.csv"
+    dataFile = "datasets/dset3/intrude_dset.csv"
     myDataSet = dataSet(dataFile)
     myNetwork = NeuralNetwork(myDataSet)
 
