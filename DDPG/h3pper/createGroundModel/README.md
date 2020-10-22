@@ -8,6 +8,12 @@ You may need to run Matlab as root in order to download this (https://www.mathwo
 # Documentation for the Keras Network Import
 https://www.mathworks.com/help/deeplearning/ref/importkerasnetwork.html
 
+# Ground Reaction Models
+I made two ground reaction models. The first maps [gamma, beta, depth] -> [grf_x, grf_z]. This uses groundReactionForceModel1.m and model1.h5. The second maps [gamma, beta, depth, velocity_x, velocity_z, theta_dt] -> [grf_x, grf_z, torque_y] and uses groundReactionForceModel2.m and model2.h5.
+
+## Units
+I used standard SI units, and radians for angles.
+
 # Files in Repo
 
 ## processData.py
