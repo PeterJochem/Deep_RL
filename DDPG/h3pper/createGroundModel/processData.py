@@ -188,7 +188,7 @@ class NeuralNetwork:
         self.optimizer = keras.optimizers.Adam(learning_rate = 0.01)
         
         # FIX ME - try removing the metrics - redundant
-        self.network.compile(loss='mae', optimizer = self.optimizer, metrics=['mse']) 
+        self.network.compile(loss='mse', optimizer = self.optimizer, metrics=['mse']) 
 
 
     """Train the neural network using Tensorflow directly"""
@@ -308,7 +308,7 @@ def main():
     #myNetwork.defineGraph_tf()
     #myNetwork.train_tf()
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(300)
+    myNetwork.train_keras(3)
 
 if __name__ == "__main__":
     main()
