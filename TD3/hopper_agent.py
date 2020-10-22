@@ -81,8 +81,10 @@ class Agent():
         self.actor_optim = tf.keras.optimizers.Adam(self.actor_learning_rate)
 
         # Random Process Hyper parameters
-        std_dev = 0.2
-        self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
+        self.action_noise_std_dev = 0.2
+        self.target_noise_std_dev = 0.1
+        self.init_action_noise_process(average = np.zeros(self.action_space_size), std_dev = float(self.action_noise_std_dev) * np.ones(self.action_space_size))
+        self.init_target_noise_process(average = np.zeros(self.action_space_size), std_dev = float(self.target_noise_std_dev) * np.ones(self.action_space_size))
 
         
     def defineActor(self):
@@ -130,35 +132,55 @@ class Agent():
         return tf.keras.Model([state_inputs, action_inputs], outputs)
     
     """Initialize an Ornstein–Uhlenbeck Process to generate correlated noise"""
-    def init_noise_process(self, average, std_dev, theta = 0.15, dt = 0.01, x_start = None):
+    def init_action_noise_process(self, average, std_dev, theta = 0.15, dt = 0.01, x_start = None):
     
-        self.theta = theta
-        self.average = average
-        self.std_dev = std_dev
-        self.dt = dt
-        self.x_start = x_start
-        self.x_prior = np.zeros_like(self.average)
+        self.action_theta = theta
+        self.action_average = average
+        self.action_std_dev = std_dev
+        self.action_dt = dt
+        self.action_x_start = x_start
+        self.action_x_prior = np.zeros_like(self.action_average)
     
-    """Generate another instance of the Ornstein–Uhlenbeck process"""
-    def noise(self):
-        noise = (self.x_prior + self.theta * (self.average - self.x_prior) * self.dt + 
-                self.std_dev * np.sqrt(self.dt) * np.random.normal(size=self.average.shape) )
-        
-        self.x_prior = noise
-        return noise
-    
-    """End Ornstein–Uhlenbeck process and start a new one"""
-    def resetRandomProcess(self):
-        std_dev = 0.2 
-        self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
+    """Initialize an Ornstein–Uhlenbeck Process to generate correlated noise"""
+    def init_target_noise_process(self, average, std_dev, theta = 0.15, dt = 0.01, x_start = None):
 
+        self.target_theta = theta
+        self.target_average = average
+        self.target_std_dev = std_dev
+        self.target_dt = dt
+        self.target_x_start = x_start
+        self.target_x_prior = np.zeros_like(self.target_average)
+
+    """Generate another instance of the Ornstein–Uhlenbeck process"""
+    def action_noise(self):
+        noise = (self.action_x_prior + self.action_theta * (self.action_average - self.action_x_prior) * self.action_dt + 
+                self.action_std_dev * np.sqrt(self.action_dt) * np.random.normal(size=self.action_average.shape) )
+        
+        self.action_x_prior = noise
+        return noise
+   
+        """Generate another instance of the Ornstein–Uhlenbeck process"""
+    def target_noise(self):
+        noise = (self.target_x_prior + self.target_theta * (self.target_average - self.target_x_prior) * self.target_dt +
+                self.target_std_dev * np.sqrt(self.target_dt) * np.random.normal(size=self.action_average.shape) )
+
+        self.target_x_prior = noise
+        return noise
+
+    """End Ornstein–Uhlenbeck process and start a new one"""
+    def resetActionRandomProcess(self):
+        self.init_action_noise_process(average = np.zeros(self.action_space_size), std_dev = float(self.action_noise_std_dev) * np.ones(self.action_space_size))
+
+    """End Ornstein–Uhlenbeck process and start a new one"""
+    def resetTargetRandomProcess(self):
+        self.init_target_noise_process(average = np.zeros(self.action_space_size), std_dev = float(self.target_noise_std_dev) * np.ones(self.action_space_size))
 
     def chooseAction(self, state):
 
         state = tf.expand_dims(tf.convert_to_tensor(state), 0)
         action = self.actor(state)
 
-        noise = self.noise()
+        noise = self.action_noise()
         if (useNoise == True):
             action = action.numpy() + noise
         else:
@@ -177,6 +199,10 @@ class Agent():
         with tf.GradientTape(persistent = True) as tape:
             
             target_actions = self.actor_target(next_states, training = True)
+            noise = self.target_noise()
+            target_actions = target_actions + noise
+            target_actions = tf.clip_by_value(target_actions, self.lowerLimit, self.upperLimit)
+
             newVector = tf.cast(1 - isTerminals, dtype = tf.float32)
             
             predicted_values_1 = rewards + self.discount * newVector * self.critic_target_a([next_states, target_actions], training = True)
@@ -270,7 +296,7 @@ totalStep = 0
 
 while (True): 
     current_state = myAgent.env.reset()
-    myAgent.resetRandomProcess()
+    myAgent.resetActionRandomProcess()
 
     while(True):
         myAgent.env.render()
@@ -311,9 +337,7 @@ while (True):
                     update_target(myAgent.actor_target.variables, myAgent.actor.variables, myAgent.polyak_rate)
                     update_target(myAgent.critic_target_a.variables, myAgent.critic_a.variables, myAgent.polyak_rate)
                     update_target(myAgent.critic_target_b.variables, myAgent.critic_b.variables, myAgent.polyak_rate)
-    
-
-        
+            
         """
         if (myAgent.cumulativeReward > maxScore):
             maxScore = myAgent.cumulativeReward

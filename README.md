@@ -1,10 +1,10 @@
 # Deep Reinforcement Learning
-This repo is a collection of deep reinforcement learning algorithms implemented with Tensorflow and Keras. I think deep reinforcement learning has a lot of promise for robotic manipulation and just find it fascinating. I created a folder for each algorithm I implemented. So far, I have implemented Deep Q Learning (DQN), Double Deep Q Learning (DDQN), and Deep Deterministic Policy Gradients (DDPG). I also created a custom OpenAI gym environment of a hopping robot on soft ground. 
+This repo is a collection of deep reinforcement learning algorithms implemented with Tensorflow and Keras. I think deep reinforcement learning has a lot of promise for robotic manipulation and just find it fascinating. I created a folder for each algorithm I implemented. So far, I have implemented Deep Q Learning (DQN), Double Deep Q Learning (DDQN), Deep Deterministic Policy Gradients (DDPG), and TD3. I also created a custom OpenAI gym environment of a hopping robot on soft ground. 
 
 
 # Results 
 More details about each algorithm and its results can be found in the README.md for each directory. Here are a few of the highlights so far though.
-## DDPG
+## Continuous Control with DDPG and TD3
 The Mujoco Physics Simulator (Multi-Joint Dynamics with Contact) has a few OpenAI gym environments for simple robots with continuous control. I implemented DDPG with the same hyper parameters as the original DDPG [paper](https://arxiv.org/abs/1509.02971) and applied it to the Hopper-V2 and Cheetah environments. The Hopper and Cheetah environments feature robots who must learn what torques to apply to their motors in order to produce forward translation. <br />
 
 Below is a gif of the Hopper's learned policy. A video is available [here](https://youtu.be/E0tvLX5sxv0?t=281) <br />
