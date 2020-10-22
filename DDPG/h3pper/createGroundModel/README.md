@@ -7,4 +7,6 @@ This is a Python script for reading in the dataset, creating a neural network, a
 # createOneDataset.py
 This is a really short Python script which takes in a list of csv files created from Juntao's Kronos simulations and creates one really large dataset of the same format. To edit the list of files to add and where they are located, you only need to change a line or two of the 20 or so lines of code.  
 
+# groundReactionModel.m
+This Matlab script has a class that reads in .h5 file and creates a neural network from it. The groundReactionModel is a neural network that maps the state of the foot to the ground reaction forces and torques experienced by the foot. 
 
