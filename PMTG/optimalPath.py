@@ -7,7 +7,7 @@ class optimalPath:
 
     def __init__(self):
 
-        self.numPts = 3000
+        self.numPts = 300
         self.totalTime = 1.0
         
         self.currentIndex = 0
@@ -17,10 +17,13 @@ class optimalPath:
         
         # Parameterize the eight shape path
         self.a_x_start = 2.0
-        self.a_y_start = 4.0
+        self.a_y_start = 2.0
 
         self.a_x = self.a_x_start
         self.a_y = self.a_y_start
+
+        self.a_x_history = np.zeros(self.numPts)
+        self.a_y_history = np.zeros(self.numPts)
 
         for i in range(self.numPts):
 
@@ -32,7 +35,19 @@ class optimalPath:
             self.y[i] = next_y
 
             self.degradePath()
+
+            self.a_x_history[i] = self.a_x 
+            self.a_y_history[i] = self.a_y
+    
+    """Describe me"""
+    def computeTG_at_Index(self, time, a_x, a_y):
         
+        time = (float(time)/self.numPts) * self.totalTime
+        next_x = a_x * np.sin(2 * np.pi * time)
+        next_y = (a_y/2.0) * (np.sin(2 * np.pi * time) * np.cos(2 * np.pi * time))
+        
+        return next_x, next_y
+
     """Change the parameters that determine the path so that the 
     optimal path is not a perfect figure 8"""
     def degradePath(self):
@@ -42,41 +57,41 @@ class optimalPath:
     def viewPlot(self):
 
         plt.scatter(self.x, self.y)
+        #plt.scatter([1, 2], [3, 2])
         plt.show()
 
-    def reset(self, TG):
+    def reset(self):
         
         self.currentIndex = 0
 
         self.a_x = self.a_x_start
         self.a_y = self.a_y_start
-        
-        return self.currentIndex, self.x[self.currentIndex], self.y[self.currentIndex], TG.a_x, TG.a_y
+           
+        return self.currentIndex, self.x[self.currentIndex], self.y[self.currentIndex], self.a_x, self.a_y
 
-    def reward(self, action):
-        
-        #print(action)
-        agent_x = action[0]
-        agent_y = action[1]
-        current_x, current_y = self.x[self.currentIndex], self.y[self.currentIndex] 
+    def reward(self, x, y):
+         
+        optimal_x, optimal_y = self.x[self.currentIndex], self.y[self.currentIndex] 
 
-        return -np.sqrt(((agent_x - current_x)**2) + ((agent_y - current_y)**2)) 
+        return -np.sqrt(((x - optimal_x)**2) + ((y - optimal_y)**2)) 
             
-    def step(self, TG):
+    def step(self, new_a_x, new_a_y, nn_x, nn_y):
         
         self.currentIndex = self.currentIndex + 1
-        # [time, agent's_x, agent's_y, TG's a_x, TG's a_y] 
+            
+        # need to recompute the TG's at index value
+        x_tg, y_tg = self.computeTG_at_Index(self.currentIndex, new_a_x, new_a_y)
         
-        return self.currentIndex, self.x[self.currentIndex], self.y[self.currentIndex], TG.a_x, TG.a_y       
+        # [time, agent's_x, agent's_y, TG's a_x, TG's a_y]
+        return self.currentIndex, (x_tg + nn_x), (y_tg + nn_y), new_a_x, new_a_y      
 
 
     def isDone(self):
 
-        if (self.currentIndex >= self.numPts - 2):
+        #if (self.currentIndex >= self.numPts - 2):
+        if (self.currentIndex >= self.numPts - 1):    
             return True
         return False
     
-
-
 #myPath = optimalPath()
 #myPath.viewPlot()

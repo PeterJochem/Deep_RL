@@ -8,7 +8,7 @@ import keras
 import numpy as np
 
 absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
-absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model"  
+absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
 
 class HoppingRobotEnv(gym.Env):       
     
@@ -53,8 +53,8 @@ class HoppingRobotEnv(gym.Env):
                 #p.resetJointState(self.hopper, j, self.homePositionAngles[activeJoint])
                 activeJoint = activeJoint + 1
 
-        # What exactly does this do?
-        p.setRealTimeSimulation(0)
+    
+        p.setRealTimeSimulation(0) # Must do this to apply forces/torques with PyBullet method
         self.stateId = p.saveState() # Stores state in memory rather than on disk
     
 
@@ -90,7 +90,7 @@ class HoppingRobotEnv(gym.Env):
             nextJointId = self.paramIds[i]
             #targetPos = p.readUserDebugParameter(nextJointId) # This reads from the sliders. Useful for debugging        
             targetPos = controlSignal[i] # This uses the control signal parameter
-            p.setJointMotorControl2(self.hopper, self.jointIds[i], p.POSITION_CONTROL, targetPos, force = 75.0) # 100.0
+            p.setJointMotorControl2(self.hopper, self.jointIds[i], p.POSITION_CONTROL, targetPos, force = 50.0) # 100.0
  
     """Return the robot to its initial state"""
     def reset(self):
@@ -104,16 +104,15 @@ class HoppingRobotEnv(gym.Env):
 
         return self.computeObservation()
 
-    def computeGRF(self, gamma, beta, depth, dx, dy, dz):
+    def computeGRF(self, gamma, beta, depth, dx, dy, dz, ankle_angular_velocity):
         
-        # Current: [gamma, beta, velocity_x, velocity_y, velocity_z] Be careful with how frames are defined in PyBullet vs Chrono
-        # Desired: [gamma, beta, depth, velocity_x, velocity_y, velocity_z]
-        inVector = [gamma, beta, dx, dy, dz]
+
+        inVector = [gamma, beta, depth, dy, dz, ankle_angular_velocity]
         
         # Be careful with how you define the frames
-        grf_y, grf_z = self.neural_net.predict(inVector)[0]
+        grf_y, grf_z, torque = (self.neural_net.predict([inVector]))[0]
         
-        return grf_y, grf_z
+        return grf_y, grf_z, torque
         
     """ After stepping the simulation, force the robot to be in the y-z plane
     A bit too hacky? Well, planar physics is well, hacky anyways""" 
@@ -134,26 +133,32 @@ class HoppingRobotEnv(gym.Env):
         # Forward prop neural network to get GRF, use that to change the gravity
         # Shoud really compute after every p.stepSimulation
         ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw = self.getFootState()           
-        
-
         #depth = plate_bottom_z - bed_z
         gamma = np.sqrt(foot_dy**2 + foot_dz**2) 
         beta = foot_roll
         
-        #if(above bed) # no grf 
         # else if (in bed) manually set the grf
         # else if (on bottom) let grf be PyBullet defined
 
-        # grf_y, grf_z = self.computeGRF(gamma, beta, depth, foot_dx, foot_dy, foot_dz)
+        customGRF = False
+        if (foot_z < 0.3 and foot_z > 0.0001):
+            customGRF = True
+
+        grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)
           
-        p.getCameraImage(320, 200) # Make it much faster by turning this off
+        #p.getCameraImage(320, 200) # Make it much faster by turning this off
     
         # Step forward some finite number of seconds or milliseconds
         self.controller(action[0])
         for i in range (3):
             foot_index = 3     
             # Must call this each time we stepSimulation
-            # p.applyExternalForce(self.hopper, foot_index, [0, grf_y, grf_z], [0.0, 0.0, 0.0], p.LINK_FRAME) # Where on the foot to apply the force?
+            
+            if (customGRF):
+                p.applyExternalForce(self.hopper, foot_index, [0, grf_y, grf_z], [0.0, 0.0, 0.0], p.LINK_FRAME) 
+                p.applyExternalTorque(self.hopper, foot_index, [torque, 0, 0], p.LINK_FRAME)
+            
+            
             p.stepSimulation()
             self.planarConstraint()
      

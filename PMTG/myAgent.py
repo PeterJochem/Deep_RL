@@ -8,14 +8,53 @@ import matplotlib.pyplot as plt
 from tensorflow.keras import regularizers
 from tensorflow import keras
 from optimalPath import optimalPath 
-from TG import TG 
 
 allReward = [] # List of rewards over time, for logging and visualization
 
 # FIX ME - I turned the noise off
-useNoise = False
+useNoise = True
 
 maxScore = -10000
+
+def computeLearnedPath():
+        
+    all_x = []
+    all_y = []
+
+    time = 0
+    current_state = myAgent.desiredPath.reset()
+    myAgent.resetRandomProcess()
+
+    while(True):
+        action = []
+        useNoise = False
+        action = myAgent.chooseAction(current_state)[0]
+
+        # observation, reward, done, info
+        next_state, reward, done, info = myAgent.step(action)
+        
+        print(next_state)
+
+        all_x.append(next_state[1])
+        all_y.append(next_state[2])
+
+        # Update counters
+        myAgent.moveNumber = myAgent.moveNumber + 1
+        myAgent.cumulativeReward = myAgent.cumulativeReward + reward
+
+        if (done == True):
+            myAgent.handleGameEnd()
+            break
+
+        current_state = next_state
+        time = time + 1
+    
+    time = 0
+    current_state = myAgent.desiredPath.reset()
+    myAgent.resetRandomProcess()
+    useNoise = True
+    return all_x, all_y
+    
 
 """Signal handler displays the agent's progress"""
 def handler1(signum, frame):
@@ -24,6 +63,13 @@ def handler1(signum, frame):
     plt.plot(allReward)
     plt.ylabel('Cumulative Reward')
     plt.xlabel('Episode')
+    plt.show()
+
+    plt.scatter(myAgent.desiredPath.x, myAgent.desiredPath.y)
+    
+    # Compute the agent's path
+    learned_x, learned_y = computeLearnedPath()
+    plt.scatter(learned_x, learned_y)
     plt.show()
 
     useNoise = False
@@ -49,15 +95,12 @@ class Agent():
         self.cumulativeReward = 0 # Current game's total reward
         
         # These parameters are specefic to the environment
-        self.max_control_signal = 10.0
-        self.lowerLimit = -10.0
-        self.upperLimit = 10.0
+        self.max_control_signal = 2.0
+        self.lowerLimit = -2.0
+        self.upperLimit = 2.0
         
         self.desiredPath = optimalPath()
         
-        # FIX ME - I seeded the starting a_x, a_y for the TG
-        self.TG = TG(8, 0.5)  
-
         self.polyak_rate = 0.001
         self.action_space_size = 4 # Size of the action vector  
         # [a_x, a_y, u_x, u_y] 
@@ -84,7 +127,7 @@ class Agent():
         self.actor_optim = tf.keras.optimizers.Adam(self.actor_learning_rate)
 
         # Random Process Hyper parameters
-        std_dev = 0.2
+        std_dev = 0.0005 #0.05
         self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
 
         
@@ -95,19 +138,17 @@ class Agent():
         inputs = layers.Input(shape = (self.state_space_size, ))
         
         nextLayer = layers.BatchNormalization()(inputs) # Normalize this?
-        nextLayer = layers.Dense(400)(nextLayer)
-        nextLayer = layers.BatchNormalization()(nextLayer)
+        nextLayer = layers.Dense(300)(nextLayer)
         nextLayer = layers.Activation("relu")(nextLayer)
         
-        nextLayer = layers.Dense(300)(nextLayer)
-        nextLayer = layers.BatchNormalization()(nextLayer)
+        nextLayer = layers.Dense(200)(nextLayer)
         nextLayer = layers.Activation("relu")(nextLayer)
 
         # tanh maps into the interval of [-1, 1]
-        outputs = layers.Dense(self.action_space_size, activation = "tanh", kernel_initializer = actor_initializer)(nextLayer)
+        outputs = layers.Dense(self.action_space_size, activation = "linear", kernel_initializer = actor_initializer)(nextLayer)
         
-        # max_control signal is 1.0 for EACH joint of the Hopper robot
-        outputs = outputs * self.max_control_signal
+        # max_control signal is 2.0 for axis of the toy PMTG problem
+        #outputs = outputs * self.max_control_signal
         return tf.keras.Model(inputs, outputs)
     
     def defineCritic(self):
@@ -116,16 +157,14 @@ class Agent():
 
         state_inputs = layers.Input(shape=(self.state_space_size))
         
-        state_stream = layers.BatchNormalization()(state_inputs) # Normalize this?
-        state_stream = layers.Dense(400)(state_stream)
-        state_stream = layers.BatchNormalization()(state_stream)
+        state_stream = layers.Dense(200)(state_inputs)
         state_stream = layers.Activation("relu")(state_stream)
 
         action_inputs = layers.Input(shape = (self.action_space_size) )
         
         # Merge the two seperate information streams
         merged_stream = layers.Concatenate()([state_stream, action_inputs])
-        merged_stream = layers.Dense(300)(merged_stream) 
+        merged_stream = layers.Dense(200)(merged_stream) 
         merged_stream = layers.Activation("relu")(merged_stream)
 
         outputs = layers.Dense(1, kernel_initializer = critic_initializer)(merged_stream)
@@ -156,29 +195,18 @@ class Agent():
         self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
 
 
-    def chooseAction(self, state, time):
+    def chooseAction(self, state):
 
         state = tf.expand_dims(tf.convert_to_tensor(state), 0)
         
-        u_tg = self.TG.U_TG(time)
+        action = self.actor(state)      
         
-        nextX = self.actor(state).numpy().squeeze()[2] + u_tg[0] 
-        nextY = self.actor(state).numpy().squeeze()[3] + u_tg[1]
-        
-        action = np.zeros(4) # [Tg's a_x, TG's a_y, nextX, nextY]
-        
-        action[0] = u_tg[0]  
-        action[1] = u_tg[1]
-        action[2] = nextX
-        action[3] = nextY
-
-
         """I turned the noise off for PMTG"""
-        #noise = self.noise()
-        #if (useNoise == True):
-        #    action = action.numpy() + noise
-        #else:
-            #action = action.numpy()
+        noise = self.noise()
+        if (useNoise == True):
+            action = action.numpy().squeeze() + noise
+        else:
+            action = action.numpy().squeeze()
     
         # Make sure action is withing legal range
         action = np.clip(action, self.lowerLimit, self.upperLimit)
@@ -186,9 +214,7 @@ class Agent():
         return [np.squeeze(action)]
 
     @tf.function
-    def update(
-        self, states, actions, rewards, next_states, isTerminals
-    ): 
+    def update(self, states, actions, rewards, next_states, isTerminals): 
     
         with tf.GradientTape() as tape:
             
@@ -242,12 +268,14 @@ class Agent():
     
     def step(self, action):
         
-        nextState = self.desiredPath.step(self.TG)
+        x_a_tg, y_a_tg, nn_modulation_x, nn_modulation_y = action
 
-        self.TG.a_x = action[0]
-        self.TG.a_y = action[1]
-
-        reward = self.desiredPath.reward(action)   
+        # new_a_x, new_a_y, nn_x, nn_y 
+        # self.currentIndex, (x_tg + nn_x), (y_tg + nn_y), new_a_x, new_a_y
+        nextState = self.desiredPath.step(x_a_tg, y_a_tg, nn_modulation_x, nn_modulation_y)
+    
+        _, nextX, nextY, _, _ = nextState
+        reward = self.desiredPath.reward(nextX, nextY)   
         isDone = self.desiredPath.isDone()
         info = None
 
@@ -270,7 +298,7 @@ totalStep = 0
 while (True): 
     
     time = 0
-    current_state = myAgent.desiredPath.reset(myAgent.TG)
+    current_state = myAgent.desiredPath.reset()
     myAgent.resetRandomProcess()
 
     while(True):
@@ -281,16 +309,11 @@ while (True):
         #if (totalStep < myAgent.explorationSteps):
         #    action = myAgent.randomAction().squeeze()
         #else:
-        action = myAgent.chooseAction(current_state, time)[0]
-        
-        
+        action = myAgent.chooseAction(current_state)[0]
+            
         # observation, reward, done, info
-        next_state, reward, done, info = myAgent.step(action)
-    
-        # state, action, reward, next_state
-        if (done == True):
-            reward = -10.0 # Does it work without it?
-
+        next_state, reward, done, info = myAgent.step(action) 
+         
         myAgent.replayMemory.append(current_state, action, reward, next_state, done)
         
         # Update counters
