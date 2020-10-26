@@ -6,6 +6,7 @@ import time
 import pybullet_data
 import keras
 import numpy as np
+from scipy.spatial.transform import Rotation as R
 
 absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
 absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
@@ -19,6 +20,7 @@ class HoppingRobotEnv(gym.Env):
         # Two environments? One for graphics, one w/o graphics?
         self.physicsClient = p.connect(p.GUI) #or p.DIRECT for non-graphical version
         
+        self.visualizeTrajectory = False 
         self.jointIds=[]
         self.paramIds=[]
     
@@ -37,6 +39,9 @@ class HoppingRobotEnv(gym.Env):
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10) 
         self.homePositionAngles = [0.0, 0.0, 0.0]
         
+        self.foot_points = []
+        self.body_points = []
+            
         activeJoint = 0
         for j in range (p.getNumJoints(self.hopper)):
             
@@ -101,12 +106,15 @@ class HoppingRobotEnv(gym.Env):
         p.removeAllUserParameters() # Must remove and replace
         p.restoreState(self.stateId) 
         self.defineHomePosition()
+        
+        for i in range(len(self.foot_points)):
+            p.removeUserDebugItem(self.foot_points[i])
+            p.removeUserDebugItem(self.body_points[i])
 
         return self.computeObservation()
 
     def computeGRF(self, gamma, beta, depth, dx, dy, dz, ankle_angular_velocity):
         
-
         inVector = [gamma, beta, depth, dy, dz, ankle_angular_velocity]
         
         # Be careful with how you define the frames
@@ -128,6 +136,69 @@ class HoppingRobotEnv(gym.Env):
         p.resetBasePositionAndOrientation(self.hopper, [0.0, y, z], robot_orientation)
         p.resetBaseVelocity(self.hopper, [0.0, dy, dz], [wx, 0.0, 0.0])
 
+    """Map the bezier point to the world frame and then do IK. Return desired joint angles"""
+    def bezierToJointAngles(self, bezier_point):
+                    
+        bezier_world = self.hip_to_world(bezier_point)
+            
+        foot_index = 3     
+        # Inlude a desired orientation?
+        #p.calculateInverseKinematics(self.hopper, foot_index, bezier_position, target_orientation) 
+        
+        
+        return p.calculateInverseKinematics(self.hopper, foot_index, bezier_world)
+
+       
+    """Time must be in the interval of [0, 1] """
+    def bezierCurve(self, time, points):
+        
+        t1 = ((1 - time)**3) * points[0]
+        
+        t2 = (3 * ((1 - time)**2) * time * points[1]) 
+
+        t3 = (3 * ((1 - time)) * time**2 * points[2])
+        
+        t4 = (time**3) + points[3] 
+        
+        return t1 + t2 + t3 + t4
+
+    """ Convert a point from the hip frame to the world frame """
+    def hip_to_world(self, Point_in_hip_frame):
+        
+        hip_position, hip_orientation = p.getBasePositionAndOrientation(self.hopper)
+
+        hip_x, hip_y, hip_z = Point_in_hip_frame
+        P_Hip = np.zeros((4, 1), dtype="float32")
+        P_Hip[0][0] = hip_x 
+        P_Hip[0][0] = hip_y
+        P_Hip[0][0] = hip_z
+        P_Hip[0][0] = 1.0
+        
+        """Use scipy to convert the quaternion to a rotation matrix"""
+        r = R.from_quat(hip_orientation) # scipy uses x, y, z, w
+        
+        T_world_hip = np.zeros((4, 4), dtype='float32')
+        for i in range 3
+            for j in range 3:
+                T_world_hip[i][j] = r[i][j]
+        
+        T_world_hip[0][3] = hip_x
+        T_world_hip[1][3] = hip_y
+        T_world_hip[2][3] = hip_z
+        T_world_hip[3][3] = 1.0 
+
+        P_world = np.matmul(T_world_hip, P_hip)  
+
+        return P_world
+
+
+    def plotPosition(self):
+        world_pos, orientation, localInertialFramePosition, localInertialFrameOrientation, worldLinkFramePosition, worldLinkFrameOrientation, worldLinkLinearVelocity, worldLinkAngularVelocity = p.getLinkState(self.hopper, 0, 1)
+        body_x, body_y, body_z = world_pos
+        self.foot_points.append(p.addUserDebugLine([foot_x - 0.025, foot_y - 0.025, foot_z - 0.025], [foot_x, foot_y, foot_z], [1, 0, 0]))
+        self.body_points.append(p.addUserDebugLine([body_x - 0.025, body_y - 0.025, body_z + 0.2], [body_x, body_y, body_z + 0.2 + 0.025], [0, 0, 1]))
+
+
     def step(self, action):
         
         # Forward prop neural network to get GRF, use that to change the gravity
@@ -139,6 +210,9 @@ class HoppingRobotEnv(gym.Env):
         
         # else if (in bed) manually set the grf
         # else if (on bottom) let grf be PyBullet defined
+        
+        if (self.visualizeTrajectory):
+            self.plotPosition()
 
         customGRF = False
         if (foot_z < 0.3 and foot_z > 0.0001):
@@ -146,8 +220,6 @@ class HoppingRobotEnv(gym.Env):
 
         grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)
           
-        #p.getCameraImage(320, 200) # Make it much faster by turning this off
-    
         # Step forward some finite number of seconds or milliseconds
         self.controller(action[0])
         for i in range (3):
@@ -157,7 +229,6 @@ class HoppingRobotEnv(gym.Env):
             if (customGRF):
                 p.applyExternalForce(self.hopper, foot_index, [0, grf_y, grf_z], [0.0, 0.0, 0.0], p.LINK_FRAME) 
                 p.applyExternalTorque(self.hopper, foot_index, [torque, 0, 0], p.LINK_FRAME)
-            
             
             p.stepSimulation()
             self.planarConstraint()
