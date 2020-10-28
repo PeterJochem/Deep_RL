@@ -4,7 +4,8 @@ import gym
 import tensorflow as tf
 from tensorflow.keras import layers
 import numpy as np
-import gym_hopping_robot
+#import gym_hopping_robot_pmtg
+import gym_hopping_robot_pmtg
 import matplotlib.pyplot as plt
 from tensorflow.keras import regularizers
 from tensorflow import keras
@@ -50,12 +51,12 @@ class Agent():
         self.lowerLimit = -10.0 #-5.0 # -180 - 180 # Or 3.14?
         self.upperLimit = 10.0
 
-        self.env = gym.make('hopping_robot-v1')
+        self.env = gym.make('hopping_robot_pmtg-v0')
         self.state = self.env.reset()
         
         self.polyak_rate = 0.001
         self.action_space_size = 12 # Size of the action vector  
-        self.state_space_size = 18 + 5 # Size of the observation vector
+        self.state_space_size = 18 # Size of the observation vector
         
         self.replayMemory = replayBuffer(self.memorySize, self.state_space_size, self.action_space_size)
 

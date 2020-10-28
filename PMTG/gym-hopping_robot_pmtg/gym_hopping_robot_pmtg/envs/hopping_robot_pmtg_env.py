@@ -11,8 +11,9 @@ from scipy.spatial.transform import Rotation as R
 absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
 absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
 
-class HoppingRobotEnv(gym.Env):       
+class HoppingRobot_PmtgEnv(gym.Env):       
     
+
     metadata = {'render.modes': ['human']}
     
     def __init__(self):
@@ -118,6 +119,7 @@ class HoppingRobotEnv(gym.Env):
         inVector = [gamma, beta, depth, dy, dz, ankle_angular_velocity]
         
         # Be careful with how you define the frames
+        print(inVector)
         grf_y, grf_z, torque = (self.neural_net.predict([inVector]))[0]
         
         return grf_y, grf_z, torque
@@ -171,10 +173,39 @@ class HoppingRobotEnv(gym.Env):
         body_x, body_y, body_z = world_pos
         self.foot_points.append(p.addUserDebugLine([foot_x - 0.025, foot_y - 0.025, foot_z - 0.025], [foot_x, foot_y, foot_z], [1, 0, 0]))
         self.body_points.append(p.addUserDebugLine([body_x - 0.025, body_y - 0.025, body_z + 0.2], [body_x, body_y, body_z + 0.2 + 0.025], [0, 0, 1]))
+    
+    
+    def createBodyScrews(self):
 
-
-    def step(self, action):
+        foot_z_dim = 0.01 
+        L1_length = 0.4
+        L2_length = 0.4
+        L3_length = 0.4
         
+        s1 = np.array([1.0, 0.0, 0.0])  
+        s2 = np.array([1.0, 0.0, 0.0])
+        s3 = np.array([1.0, 0.0, 0.0])
+
+        q1 = np.array([0.0, 0.0, foot_z_dim])
+        q2 = np.array([0.0, 0.0, foot_z_dim + L1_length])
+        q3 = np.array([0.0, 0.0, foot_z_dim + L1_length + L2_length])
+            
+        return mr.ScrewToAxis(q1, s1, 0.0), mr.ScrewToAxis(q2, s2, 0.0), mr.ScrewToAxis(q3, s3, 0.0)  
+    
+    """[ankle angle, knee angle, hip angle] """
+    def Jacobian(self, thetaList):
+         
+        body_screws = self.createBodyScrews(thetaList)
+        return mr.bodyJacobian(body_screws, thetaList)
+         
+    """ thetaList should be in the order [ankle angle, knee angle, hip angle] """
+    def wrenchToTorque(self, thetaList, wrench):
+        
+        # Torque = Jacobian(thetaList).T * Wrench
+        return np.matmul(np.transpose(self.Jacobian(thetaList)), wrench)
+         
+    def step(self, action):
+           
         # Forward prop neural network to get GRF, use that to change the gravity
         # Shoud really compute after every p.stepSimulation
         ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw = self.getFootState()           
@@ -190,6 +221,7 @@ class HoppingRobotEnv(gym.Env):
 
         customGRF = False
         if (foot_z < 0.3 and foot_z > 0.0001):
+            # pass # FIX ME!!
             customGRF = True
 
         grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)

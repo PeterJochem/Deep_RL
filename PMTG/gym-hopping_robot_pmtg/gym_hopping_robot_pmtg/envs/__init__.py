@@ -1,0 +1,1 @@
+from gym_hopping_robot_pmtg.envs.hopping_robot_pmtg_env import HoppingRobot_PmtgEnv
