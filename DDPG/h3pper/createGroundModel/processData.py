@@ -57,8 +57,8 @@ class dataSet:
 
             torque_y = float(x[14])
 
-            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
+            #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
+            newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
 
             self.allData.append(newTrainInstance)
             

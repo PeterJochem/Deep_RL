@@ -46,15 +46,15 @@ class Agent():
         self.cumulativeReward = 0 # Current game's total reward
         
         # These parameters are Specefic to the  H3pper Robot with position control
-        self.max_control_signal = 5.0
-        self.lowerLimit = -5.0 # -180 - 180 # Or 3.14?
-        self.upperLimit = 5.0
+        self.max_control_signal = 10.0
+        self.lowerLimit = -10.0 #-5.0 # -180 - 180 # Or 3.14?
+        self.upperLimit = 10.0
 
         self.env = gym.make('hopping_robot-v1')
         self.state = self.env.reset()
         
         self.polyak_rate = 0.001
-        self.action_space_size = 11 # Size of the action vector  
+        self.action_space_size = 12 # Size of the action vector  
         self.state_space_size = 18 + 5 # Size of the observation vector
         
         self.replayMemory = replayBuffer(self.memorySize, self.state_space_size, self.action_space_size)
@@ -70,13 +70,13 @@ class Agent():
         
         # Actor's learning rate should be smaller
         self.critic_learning_rate = 0.0001
-        self.actor_learning_rate = 0.00001
+        self.actor_learning_rate = 0.0001
 
         self.critic_optim = tf.keras.optimizers.Adam(self.critic_learning_rate)
         self.actor_optim = tf.keras.optimizers.Adam(self.actor_learning_rate)
 
         # Random Process Hyper parameters
-        std_dev = 0.2
+        std_dev = 0.4
         self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
 
         
