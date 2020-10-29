@@ -95,8 +95,10 @@ class HoppingRobot_PmtgEnv(gym.Env):
         for i in range(len(self.paramIds)):
             nextJointId = self.paramIds[i]
             #targetPos = p.readUserDebugParameter(nextJointId) # This reads from the sliders. Useful for debugging        
-            targetPos = controlSignal[i] # This uses the control signal parameter
-            p.setJointMotorControl2(self.hopper, self.jointIds[i], p.POSITION_CONTROL, targetPos, force = 50.0) # 100.0
+            targetTorque = controlSignal[i] # This uses the control signal parameter
+            
+            p.setJointMotorControl2(bodyUniqueId=self.hopper, jointIndex=self.jointIds[i], controlMode=p.VELOCITY_CONTROL, force=0) # Must disable the vel control
+            p.setJointMotorControl2(bodyUniqueId=self.hopper, jointIndex=self.jointIds[i], controlMode=p.TORQUE_CONTROL, force=targetTorque) 
  
     """Return the robot to its initial state"""
     def reset(self):
@@ -222,7 +224,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
         customGRF = False
         if (foot_z < 0.3 and foot_z > 0.0001):
             # pass # FIX ME!!
-            customGRF = True
+            customGRF = False
 
         grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)
           
