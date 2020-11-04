@@ -2,7 +2,8 @@
 classdef groundReactionModel1
    properties
       % Change this line to be the path to the <name>.h5 file
-      network = importKerasNetwork('model1.h5')
+      % network = importKerasNetwork('model1.h5')
+      network = importKerasNetwork('/home/peter/Desktop/HoppingRobot_Fall/src/dset2Work/model.h5')
    end
    methods
        function [grf_x, grf_z] = computeGRF(obj, gamma, beta, depth)

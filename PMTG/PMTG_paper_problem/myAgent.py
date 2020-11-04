@@ -83,7 +83,7 @@ class Agent():
      
         # Hyper-parameters
         self.discount = 0.99
-        self.memorySize = 1000000 
+        self.memorySize = 1000
         self.batch_size = 100 # Mini batch size for keras .fit method
         self.explorationSteps = 101
         self.trainEvery = 50
@@ -120,8 +120,8 @@ class Agent():
         self.critic_target.set_weights(self.critic.get_weights())
         
         # Actor's learning rate should be smaller
-        self.critic_learning_rate = 0.001
-        self.actor_learning_rate = 0.0001
+        self.critic_learning_rate = 0.0001
+        self.actor_learning_rate = 0.000001
 
         self.critic_optim = tf.keras.optimizers.Adam(self.critic_learning_rate)
         self.actor_optim = tf.keras.optimizers.Adam(self.actor_learning_rate)
@@ -137,8 +137,8 @@ class Agent():
         
         inputs = layers.Input(shape = (self.state_space_size, ))
         
-        nextLayer = layers.BatchNormalization()(inputs) # Normalize this?
-        nextLayer = layers.Dense(300)(nextLayer)
+        #nextLayer = layers.BatchNormalization()(inputs) # Normalize this?
+        nextLayer = layers.Dense(300)(inputs)
         nextLayer = layers.Activation("relu")(nextLayer)
         
         nextLayer = layers.Dense(200)(nextLayer)
@@ -149,6 +149,12 @@ class Agent():
         
         # max_control signal is 2.0 for axis of the toy PMTG problem
         #outputs = outputs * self.max_control_signal
+        # [a_x, a_y, u_x, u_y
+        #outputs[0] = outputs[0] * 2.0
+        #outputs[1] = outputs[1] * 2.0
+        #outputs[2] = outputs[2] * self.max_control_signal
+        #outputs[3] = outputs[3] * self.max_control_signal
+        
         return tf.keras.Model(inputs, outputs)
     
     def defineCritic(self):
@@ -164,7 +170,7 @@ class Agent():
         
         # Merge the two seperate information streams
         merged_stream = layers.Concatenate()([state_stream, action_inputs])
-        merged_stream = layers.Dense(200)(merged_stream) 
+        merged_stream = layers.Dense(300)(merged_stream) 
         merged_stream = layers.Activation("relu")(merged_stream)
 
         outputs = layers.Dense(1, kernel_initializer = critic_initializer)(merged_stream)
@@ -201,7 +207,6 @@ class Agent():
         
         action = self.actor(state)      
         
-        """I turned the noise off for PMTG"""
         noise = self.noise()
         if (useNoise == True):
             action = action.numpy().squeeze() + noise

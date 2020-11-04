@@ -30,7 +30,7 @@ class HoppingRobotEnv(gym.Env):
         p.setGravity(0, 0, -10)
 
         p.loadURDF("plane.urdf")
-        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.5], useFixedBase = False)
+        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.35], useFixedBase = False)
         
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
         self.homePositionAngles = [0.0, 0.0, 0.0]
@@ -217,8 +217,7 @@ class HoppingRobotEnv(gym.Env):
         foot_link_index = 3
 
         ankle_position, ankle_angular_velocity, ankle_joint_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [ankle_joint_index])[0]
-             
-         
+              
         world_pos, orientation, localInertialFramePosition, localInertialFrameOrientation, worldLinkFramePosition, worldLinkFrameOrientation, worldLinkLinearVelocity, worldLinkAngularVelocity = p.getLinkState(self.hopper, foot_link_index, 1)
         
         foot_roll, foot_pitch, foot_yaw = p.getEulerFromQuaternion(self.robot_orientation)

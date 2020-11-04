@@ -7,7 +7,7 @@ class optimalPath:
 
     def __init__(self):
 
-        self.numPts = 300
+        self.numPts = 200
         self.totalTime = 1.0
         
         self.currentIndex = 0
@@ -51,13 +51,11 @@ class optimalPath:
     """Change the parameters that determine the path so that the 
     optimal path is not a perfect figure 8"""
     def degradePath(self):
-        self.a_x = self.a_x - (2 * self.a_x /self.numPts)
-        self.a_y = self.a_y - (self.a_y / (2 * self.numPts))
+        self.a_x = self.a_x - (2 * self.a_x /self.numPts)/10.0
+        self.a_y = self.a_y - (self.a_y / (2 * self.numPts))/10.0
 
     def viewPlot(self):
-
-        plt.scatter(self.x, self.y)
-        #plt.scatter([1, 2], [3, 2])
+        plt.scatter(self.x[0:50], self.y[0:50])
         plt.show()
 
     def reset(self):
@@ -77,14 +75,14 @@ class optimalPath:
             
     def step(self, new_a_x, new_a_y, nn_x, nn_y):
         
-        self.currentIndex = self.currentIndex + 1
+        #self.currentIndex = self.currentIndex + 1
             
         # need to recompute the TG's at index value
         x_tg, y_tg = self.computeTG_at_Index(self.currentIndex, new_a_x, new_a_y)
         
+        self.currentIndex = self.currentIndex + 1
         # [time, agent's_x, agent's_y, TG's a_x, TG's a_y]
         return self.currentIndex, (x_tg + nn_x), (y_tg + nn_y), new_a_x, new_a_y      
-
 
     def isDone(self):
 
