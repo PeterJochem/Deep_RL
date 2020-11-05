@@ -57,8 +57,8 @@ class dataSet:
 
             torque_y = float(x[14])
 
-            #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
+            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
+            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
 
             self.allData.append(newTrainInstance)
             
@@ -303,7 +303,8 @@ def main():
     # Create a datset object with all our data
     #dataFile = "../../dataSets/dset3/allData/compiledSet.csv"
     
-    dataFile = "datasets/dset3/intrude_dset.csv"
+    #dataFile = "datasets/dset3/intrude_dset.csv"
+    dataFile = "/home/peter/Desktop/HoppingRobot_Fall/dataSets/dset3/Nov3Data/compiledSet.csv"
     myDataSet = dataSet(dataFile)
     myNetwork = NeuralNetwork(myDataSet)
 

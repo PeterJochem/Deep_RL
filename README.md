@@ -1,5 +1,5 @@
 # Deep Reinforcement Learning
-This repo is a collection of deep reinforcement learning algorithms implemented with Tensorflow and Keras. I think deep reinforcement learning has a lot of promise for robotic manipulation and just find it fascinating. I created a folder for each algorithm I implemented. So far, I have implemented Deep Q Learning (DQN), Double Deep Q Learning (DDQN), Deep Deterministic Policy Gradients (DDPG), and TD3. I also created a custom OpenAI gym environment of a hopping robot on soft ground. 
+This repo is a collection of deep reinforcement learning algorithms implemented with Tensorflow2 and Keras. I think deep reinforcement learning has a lot of promise for robotic manipulation and just find it fascinating. I created a folder for each algorithm I implemented. So far, I have implemented Deep Q Learning (DQN), Double Deep Q Learning (DDQN), Deep Deterministic Policy Gradients (DDPG), and TD3. I also created a custom OpenAI gym environment of a hopping robot on soft ground. 
 
 
 # Results 
@@ -20,7 +20,7 @@ Custom PyBullet Environment             |  Reward Per Epoch over Time
 :-------------------------:|:-------------------------:
 ![](DDPG/media/h3pper_DDPG2.gif)  | ![](DDPG/media/DDPG_h3pper_3.png)
 
-### Policies Modulating Wrench Generators - Custom OpenAI Gym Environment in PyBullet -
+### Policies Modulating Wrench Generators - Custom OpenAI Gym Environment in PyBullet
 I created my own custom gym environment in PyBullet for a [policies modulating trajectory generators](https://arxiv.org/abs/1910.02812) architecture. [Dan Lynch](https://robotics.northwestern.edu/people/profiles/students/lynch-dan.html) has done a lot of amazing work on creating optimal controllers for legged robots. He created an optimal wrench generator for a generic monoped on soft ground. We created simulations of how robot feet interact with soft ground in DEM simulations. From this dataset, we trained a neural network to represent the soft ground reaction forces in PyBullet. We first used DDPG and TD3 to learn a walking policy. Then, we created a PMTG architecture. Describe the PMTG results here. 
 
 ## DDQN on Atari Environments 
