@@ -57,8 +57,8 @@ class dataSet:
 
             torque_y = float(x[14])
 
-            #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
+            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
+            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
 
             self.allData.append(newTrainInstance)
             
@@ -311,7 +311,7 @@ def main():
     #myNetwork.defineGraph_tf()
     #myNetwork.train_tf()
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(20)
+    myNetwork.train_keras(300)
 
 if __name__ == "__main__":
     main()
