@@ -224,7 +224,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
         customGRF = False
         if (foot_z < 0.3 and foot_z > 0.0001):
             # pass # FIX ME!!
-            customGRF = False
+            customGRF = True
 
         grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)
           

@@ -45,8 +45,7 @@ class dataSet:
             # Convert everything to SI units
             gamma = float(x[1])  # / 3.14 # The angles are in radians
             beta = float(x[2]) # / 3.14
-            depth = -1 * float(x[3])/100.0 # Convert cm to m - Chen Li uses cm^3
-            
+            depth = -1 * float(x[3])/100.0 # Convert cm to m - Chen Li uses cm^3 
             
             grf_x = float(x[16]) 
             grf_z = float(x[18]) 
@@ -60,13 +59,14 @@ class dataSet:
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
             newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
 
-            self.allData.append(newTrainInstance)
+            if (abs(grf_z) > 0.00001):
+                self.allData.append(newTrainInstance)
             
-            # Record the min and max depth for debugging and log it to console
-            if (depth < self.minDepth):
-                self.minDepth = depth
-            if (depth > self.maxDepth):
-                self.maxDepth = depth
+                # Record the min and max depth for debugging and log it to console
+                if (depth < self.minDepth):
+                    self.minDepth = depth
+                if (depth > self.maxDepth):
+                    self.maxDepth = depth
     
         self.logStats()
         
@@ -311,7 +311,7 @@ def main():
     #myNetwork.defineGraph_tf()
     #myNetwork.train_tf()
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(20)
+    myNetwork.train_keras(100)
 
 if __name__ == "__main__":
     main()
