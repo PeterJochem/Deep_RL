@@ -45,7 +45,7 @@ class dataSet:
             # Convert everything to SI units
             gamma = float(x[1])  # / 3.14 # The angles are in radians
             beta = float(x[2]) # / 3.14
-            depth = float(x[3])/100.0 # Convert cm to m - Chen Li uses cm^3
+            depth = -1 * float(x[3])/100.0 # Convert cm to m - Chen Li uses cm^3
             
             
             grf_x = float(x[16]) 
@@ -303,14 +303,15 @@ def main():
     # Create a datset object with all our data
     #dataFile = "../../dataSets/dset3/allData/compiledSet.csv"
     
-    dataFile = "datasets/dset3/intrude_dset.csv"
+    #dataFile = "datasets/dset3/intrude_dset.csv"
+    dataFile = "/home/peter/Desktop/HoppingRobot_Fall/dataSets/dset3/Nov3Data/compiledSet.csv"
     myDataSet = dataSet(dataFile)
     myNetwork = NeuralNetwork(myDataSet)
 
     #myNetwork.defineGraph_tf()
     #myNetwork.train_tf()
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(300)
+    myNetwork.train_keras(20)
 
 if __name__ == "__main__":
     main()

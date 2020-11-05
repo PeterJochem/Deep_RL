@@ -121,7 +121,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
         inVector = [gamma, beta, depth, dy, dz, ankle_angular_velocity]
         
         # Be careful with how you define the frames
-        print(inVector)
+        #print(inVector)
         grf_y, grf_z, torque = (self.neural_net.predict([inVector]))[0]
         
         return grf_y, grf_z, torque
