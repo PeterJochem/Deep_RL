@@ -191,7 +191,7 @@
                 <child link="link2" />
 
                 <!-- What to set these to? -->
-                <limit velocity="1.0" effort="10" lower="-1.57" upper="1.57"/>
+		<limit velocity="1.0" effort="10" lower="${-1.57/2.0}" upper="${1.57/2.0}"/>
 	</joint>
 
 	<joint name="link2_link3" type="revolute">
@@ -201,7 +201,7 @@
                 <child link="link3" />
 
                 <!-- What to set these to? -->
-                <limit velocity="1.0" effort="10" lower="-1.57" upper="1.57"/>
+		<limit velocity="1.0" effort="10" lower="${-1.57/2.0}" upper="${1.57/2.0}"/>
         </joint>
 
 	
@@ -212,7 +212,7 @@
 		<child link="foot" />
 
 		<!-- What to set these to? -->
-	  	<limit velocity="1.0" effort="10" lower="-1.57" upper="1.57"/>
+		<limit velocity="1.0" effort="10" lower="${-1.57/2.0}" upper="${1.57/2.0}"/>
   	</joint>
 	
 	 <transmission name="leg_foot_trans" type="transmission_interface/SimpleTransmission">

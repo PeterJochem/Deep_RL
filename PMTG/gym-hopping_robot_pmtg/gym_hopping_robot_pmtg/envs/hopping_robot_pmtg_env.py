@@ -4,37 +4,59 @@ from gym.utils import seeding
 import pybullet as p
 import time
 import pybullet_data
+import matplotlib.pyplot as plt
 import keras
 import numpy as np
+import modern_robotics as mr
 from scipy.spatial.transform import Rotation as R
+import sys
+sys.path.append("/home/peter/Desktop/Deep_RL/PMTG/h3pper/wrench_generator")
+from trajectory_generator import trajectory_interpolator 
 
-absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
+#absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
+absolute_path_urdf = "/home/peter/Desktop/Deep_RL/PMTG/gym-hopping_robot_pmtg/gym_hopping_robot_pmtg/envs/urdf/hopping_robot.urdf"
 absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
+absolute_path_trajectories = "/home/peter/Desktop/Deep_RL/PMTG/h3pper/wrench_generator/data/CSVs/zeta_1.0/"
 
 class HoppingRobot_PmtgEnv(gym.Env):       
     
-
     metadata = {'render.modes': ['human']}
     
     def __init__(self):
         
         # Two environments? One for graphics, one w/o graphics?
         self.physicsClient = p.connect(p.GUI) #or p.DIRECT for non-graphical version
-        
+          
         self.visualizeTrajectory = False 
         self.jointIds=[]
         self.paramIds=[]
     
         self.neural_net = keras.models.load_model(absolute_path_neural_net)
 
-        p.setAdditionalSearchPath(pybullet_data.getDataPath()) #optionally
+        p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
         p.setGravity(0, 0, -10)
 
         p.loadURDF("plane.urdf")
-        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.5], useFixedBase = False)
+        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.4], useFixedBase = False)
         
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
         self.homePositionAngles = [0.0, 0.0, 0.0]
+    
+        self.desiredVelocity = 0.35  
+        self.myTG = trajectory_interpolator(absolute_path_trajectories)
+        self.minTime, self.maxTime, self.initial_conditions, self.wrenches = self.myTG.get_trajectories(0.35)
+        
+        self.u_y = self.wrenches[:,4]
+        self.u_z = self.wrenches[:,5]
+        self.u_theta = self.wrenches[:,0]
+        
+        self.periodTimes = np.linspace(self.minTime, self.maxTime, num = len(self.u_y))
+        self.time = 0.0
+
+        """plt.plot(self.time, self.u_y, 'ro')
+        plt.plot(self.time, self.u_z, 'bo')
+        plt.plot(self.time, self.u_theta, 'go')
+        plt.show()"""
 
         # Setup the debugParam sliders
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10) 
@@ -68,8 +90,6 @@ class HoppingRobot_PmtgEnv(gym.Env):
     def defineHomePosition(self):
 
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
-
-        # Why -10, 10, -10
         self.homePositionAngles = [0, 0, 0]
 
         activeJoint = 0
@@ -113,7 +133,8 @@ class HoppingRobot_PmtgEnv(gym.Env):
         for i in range(len(self.foot_points)):
             p.removeUserDebugItem(self.foot_points[i])
             p.removeUserDebugItem(self.body_points[i])
-
+        
+        self.time = 0.0
         return self.computeObservation()
 
     def computeGRF(self, gamma, beta, depth, dx, dy, dz, ankle_angular_velocity):
@@ -192,13 +213,13 @@ class HoppingRobot_PmtgEnv(gym.Env):
         q2 = np.array([0.0, 0.0, foot_z_dim + L1_length])
         q3 = np.array([0.0, 0.0, foot_z_dim + L1_length + L2_length])
             
-        return mr.ScrewToAxis(q1, s1, 0.0), mr.ScrewToAxis(q2, s2, 0.0), mr.ScrewToAxis(q3, s3, 0.0)  
+        return np.array([mr.ScrewToAxis(q1, s1, 0.0), mr.ScrewToAxis(q2, s2, 0.0), mr.ScrewToAxis(q3, s3, 0.0)]) 
     
     """[ankle angle, knee angle, hip angle] """
     def Jacobian(self, thetaList):
          
-        body_screws = self.createBodyScrews(thetaList)
-        return mr.bodyJacobian(body_screws, thetaList)
+        body_screws = self.createBodyScrews()
+        return mr.JacobianBody(body_screws.transpose(), thetaList)
          
     """ thetaList should be in the order [ankle angle, knee angle, hip angle] """
     def wrenchToTorque(self, thetaList, wrench):
@@ -215,32 +236,56 @@ class HoppingRobot_PmtgEnv(gym.Env):
         gamma = np.sqrt(foot_dy**2 + foot_dz**2) 
         beta = foot_roll
         
-        # else if (in bed) manually set the grf
-        # else if (on bottom) let grf be PyBullet defined
+        # action = 30 delta terms + 30 residual terms 
+        # 3_curves = TG(action[i]) # 30 delta terms 
+        # interpolate between points
+        # u_x, u_y, u_theta = TG[time] + residual_terms 
         
+        periodTime = self.time % self.maxTime;
+
+        modulated_u_y = self.u_y + action[0][3:13]
+        chosen_u_y = np.interp(periodTime, self.periodTimes, modulated_u_y)
+        
+        modulated_u_z = self.u_z + action[0][13:23]
+        chosen_u_z = np.interp(periodTime, self.periodTimes, modulated_u_y)
+
+        modulated_u_theta = self.u_theta + action[0][23:33]
+        chosen_u_theta = np.interp(periodTime, self.periodTimes, modulated_u_theta)
+        
+        # map the planar wrench to the robot's joint torques
+        # j1 is top joint, and j3 is the ankle
+        j1_pos, ankle_angular_velocity, ankle_joint_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [1])[0]
+        j2_pos, ankle_angular_velocity, ankle_joint_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [2])[0]
+        j3_pos, ankle_angular_velocity, ankle_joint_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [3])[0]
+        thetaList = np.array([j3_pos, j2_pos, j1_pos])
+        
+        joint_torques = self.wrenchToTorque(thetaList, [chosen_u_theta, 0.0, 0.0, 0.0, chosen_u_y, chosen_u_z])
+        joint_torques = joint_torques + action[0][:3] 
+
         if (self.visualizeTrajectory):
             self.plotPosition()
 
         customGRF = False
         if (foot_z < 0.3 and foot_z > 0.0001):
-            # pass # FIX ME!!
             customGRF = True
 
         grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)
           
         # Step forward some finite number of seconds or milliseconds
-        self.controller(action[0])
+        # Send the joint torques to the robot  
+        self.controller(joint_torques) 
+
         for i in range (3):
             foot_index = 3     
-            # Must call this each time we stepSimulation
-            
+            # Must call this each time we stepSimulation 
             if (customGRF):
                 p.applyExternalForce(self.hopper, foot_index, [0, grf_y, grf_z], [0.0, 0.0, 0.0], p.LINK_FRAME) 
                 p.applyExternalTorque(self.hopper, foot_index, [torque, 0, 0], p.LINK_FRAME)
             
             p.stepSimulation()
             self.planarConstraint()
-     
+        
+        self.time = self.time + (3) * (1.0/240.0)
         isOver = self.checkForEnd()
         return self.computeObservation(), self.computeReward(isOver), isOver, None
      
@@ -262,15 +307,18 @@ class HoppingRobot_PmtgEnv(gym.Env):
 
         return ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw
 
-    def computeObservation(self):
+    def computeObservation(self, tg_state=np.zeros(30)):
 
         self.robot_position, self.robot_orientation = p.getBasePositionAndOrientation(self.hopper)
         base_roll, base_pitch, base_yaw = p.getEulerFromQuaternion(self.robot_orientation)
         base_x, base_y, base_z = self.robot_position
         
         ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw = self.getFootState() 
+        
+        robot_state = [base_roll, base_pitch, base_yaw, base_x, base_y, base_z, ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw]  
 
-        return [base_roll, base_pitch, base_yaw, base_x, base_y, base_z, ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw]  
+        return np.append(robot_state, tg_state)
+
 
     def checkForEnd(self):
 

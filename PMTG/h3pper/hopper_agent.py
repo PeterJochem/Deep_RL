@@ -4,7 +4,6 @@ import gym
 import tensorflow as tf
 from tensorflow.keras import layers
 import numpy as np
-#import gym_hopping_robot_pmtg
 import gym_hopping_robot_pmtg
 import matplotlib.pyplot as plt
 from tensorflow.keras import regularizers
@@ -23,11 +22,9 @@ def handler1(signum, frame):
     plt.ylabel('Cumulative Reward')
     plt.xlabel('Episode')
     plt.show()
-
-    useNoise = False
+    # useNoise = False
 
 signal.signal(signal.SIGTSTP, handler1)
-
 
 class Agent():
     
@@ -48,15 +45,15 @@ class Agent():
         
         # These parameters are Specefic to the  H3pper Robot with position control
         self.max_control_signal = 10.0
-        self.lowerLimit = -10.0 #-5.0 # -180 - 180 # Or 3.14?
+        self.lowerLimit = -10.0 
         self.upperLimit = 10.0
 
         self.env = gym.make('hopping_robot_pmtg-v0')
         self.state = self.env.reset()
         
         self.polyak_rate = 0.001
-        self.action_space_size = 12 # Size of the action vector  
-        self.state_space_size = 18 # Size of the observation vector
+        self.action_space_size = 3 + 30 # 3 wrench residuals and 30 terms for the TG 
+        self.state_space_size = 18 + 30 # Size of the observation vector
         
         self.replayMemory = replayBuffer(self.memorySize, self.state_space_size, self.action_space_size)
 
@@ -79,8 +76,7 @@ class Agent():
         # Random Process Hyper parameters
         std_dev = 0.4
         self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
-
-        
+ 
     def defineActor(self):
 
         actor_initializer = tf.random_uniform_initializer(minval = -0.003, maxval = 0.003)
@@ -148,14 +144,12 @@ class Agent():
         std_dev = 0.2 
         self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
 
-
     def chooseAction(self, state):
 
-        state = tf.expand_dims(tf.convert_to_tensor(state), 0)
-        
+        state = tf.expand_dims(tf.convert_to_tensor(state), 0) 
         action = self.actor(state)
-
         noise = self.noise()
+
         if (useNoise == True):
             action = action.numpy() + noise
         else:
@@ -164,18 +158,10 @@ class Agent():
         # Make sure action is withing legal range
         action = np.clip(action, self.lowerLimit, self.upperLimit)
         
-        # The bezier curve time must be in [0, 1]
-        if (action[0][0] < 0):
-            action[0][0] = 0.0
-        elif (action[0][0] > 1):
-            action[0][0] = 1.0
-
         return [np.squeeze(action)]
 
     @tf.function
-    def update(
-        self, states, actions, rewards, next_states, isTerminals
-    ): 
+    def update(self, states, actions, rewards, next_states, isTerminals): 
     
         with tf.GradientTape() as tape:
             
@@ -211,7 +197,6 @@ class Agent():
 
         self.update(states, actions, rewards, next_states, isTerminals)
     
-
     def handleGameEnd(self):
 
         print("Game number " + str(self.currentGameNumber) + " ended with a total reward of " + str(self.cumulativeReward + 10))
@@ -227,8 +212,6 @@ class Agent():
         self.actor.save_weights("networks/actor")
         self.critic.save_weights("networks/critic")
 
-
-
 """Polyak averaging from online network to the target network"""
 @tf.function
 def update_target(target_weights, online_weights, polyak_rate):
@@ -236,10 +219,7 @@ def update_target(target_weights, online_weights, polyak_rate):
     for (target, online) in zip(target_weights, online_weights):
         target.assign(online * polyak_rate + target * (1 - polyak_rate))
 
-
-#tf.compat.v1.enable_eager_execution()
 myAgent = Agent()    
-
 totalStep = 0
 
 while (True): 
@@ -248,22 +228,16 @@ while (True):
 
     while(True):
         myAgent.env.render()
-
         totalStep = totalStep + 1
-        
         action = []
+
         if (totalStep < myAgent.explorationSteps):
             action = myAgent.randomAction()
         else:
             action = myAgent.chooseAction(current_state)
 
         # observation, reward, done, info
-        next_state, reward, done, info = myAgent.env.step(action)
-    
-        # state, action, reward, next_state
-        if (done == True):
-            reward = -10.0 # Does it work without it?
-
+        next_state, reward, done, info = myAgent.env.step(action)    
         myAgent.replayMemory.append(current_state, action[0], reward, next_state, done)
 
         # Update counters
