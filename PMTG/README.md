@@ -26,4 +26,4 @@ Dan Lynch has done a lot of amazing work creating optimal controllers for legged
 ![](media/optimal_controller_plots.png)
 
 # Results
-I have yet to get the robot to learn to hop with the PMTG architecture but we keep trying. 
+I have yet to get the robot to learn to hop with the PMTG architecture but we will keep trying. 
