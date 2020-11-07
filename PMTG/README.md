@@ -21,4 +21,9 @@ Reward Per Epoch over Time |  Learned Policy
 I am working on implementing a PMTG architecture for the hopper robot in PyBullet. Here is the initial architecture. <br />
 ![](media/flowchart.jpg) 
 
+## Optimal Wrench Controller 
+Dan Lynch has done a lot of amazing work creating optimal controllers for legged robots on soft ground. His controllers are open loop and map a time to a wrench for the robot's foot to apply. Below is a plot of the wrench controller over one period of the gait, that is one hop phase and one flight phase. During the flight phase, the robot's foot applies the zero wrench. <br />
+![](media/optimal_controller_plots.png)
 
+# Results
+I have yet to get the robot to learn to hop with the PMTG architecture but we keep trying. 
