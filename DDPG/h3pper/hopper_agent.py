@@ -11,7 +11,6 @@ from tensorflow import keras
 
 allReward = [] # List of rewards over time, for logging and visualization
 useNoise = True
-
 maxScore = -10000
 
 """Signal handler displays the agent's progress"""
@@ -26,7 +25,6 @@ def handler1(signum, frame):
     #useNoise = False
 
 signal.signal(signal.SIGTSTP, handler1)
-
 
 class Agent():
     
@@ -78,12 +76,10 @@ class Agent():
         # Random Process Hyper parameters
         std_dev = 0.1 #0.005
         self.init_noise_process(average = np.zeros(self.action_space_size), std_dev = float(std_dev) * np.ones(self.action_space_size))
-
-        
+ 
     def defineActor(self):
 
-        actor_initializer = tf.random_uniform_initializer(minval = -0.003, maxval = 0.003)
-        
+        actor_initializer = tf.random_uniform_initializer(minval = -0.003, maxval = 0.003)        
         inputs = layers.Input(shape = (self.state_space_size, ))
         
         #nextLayer = layers.BatchNormalization()(inputs) # Normalize this?
@@ -121,7 +117,6 @@ class Agent():
         merged_stream = layers.Activation("relu")(merged_stream)
 
         outputs = layers.Dense(1, kernel_initializer = critic_initializer)(merged_stream)
-
         return tf.keras.Model([state_inputs, action_inputs], outputs)
     
     """Initialize an Ornstein–Uhlenbeck Process to generate correlated noise"""
@@ -162,9 +157,7 @@ class Agent():
         return [np.squeeze(action)]
 
     @tf.function
-    def update(
-        self, states, actions, rewards, next_states, isTerminals
-    ): 
+    def update(self, states, actions, rewards, next_states, isTerminals): 
     
         with tf.GradientTape() as tape:
             
@@ -222,10 +215,7 @@ def update_target(target_weights, online_weights, polyak_rate):
     for (target, online) in zip(target_weights, online_weights):
         target.assign(online * polyak_rate + target * (1 - polyak_rate))
 
-
-#tf.compat.v1.enable_eager_execution()
 myAgent = Agent()    
-
 totalStep = 0
 
 while (True): 
@@ -234,18 +224,16 @@ while (True):
 
     while(True):
         myAgent.env.render()
-
-        totalStep = totalStep + 1
-        
+        totalStep = totalStep + 1 
         action = []
+
         if (totalStep < myAgent.explorationSteps):
             action = myAgent.randomAction()
         else:
             action = myAgent.chooseAction(current_state)
 
         # observation, reward, done, info
-        next_state, reward, done, info = myAgent.env.step(action)
-    
+        next_state, reward, done, info = myAgent.env.step(action)    
         myAgent.replayMemory.append(current_state, action[0], reward, next_state, done)
 
         # Update counters

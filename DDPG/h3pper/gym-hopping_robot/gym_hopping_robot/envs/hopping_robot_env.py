@@ -9,7 +9,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation as R
 
 absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
-absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
+#absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
+absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/model2.h5"
 
 class HoppingRobotEnv(gym.Env):       
     
@@ -30,7 +31,7 @@ class HoppingRobotEnv(gym.Env):
         p.setGravity(0, 0, -10)
 
         p.loadURDF("plane.urdf")
-        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.35], useFixedBase = False)
+        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.6], useFixedBase = False)
         
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
         self.homePositionAngles = [0.0, 0.0, 0.0]
@@ -39,9 +40,13 @@ class HoppingRobotEnv(gym.Env):
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10) 
         self.homePositionAngles = [0.0, 0.0, 0.0]
         
+        self.granularDepth = 0.3 # The height of the granular material/bed
+
         self.foot_points = []
         self.body_points = []
-            
+        
+        self.granular_points = [] # For visualizing the granular material
+
         activeJoint = 0
         for j in range (p.getNumJoints(self.hopper)):
             
@@ -61,7 +66,8 @@ class HoppingRobotEnv(gym.Env):
     
         p.setRealTimeSimulation(0) # Must do this to apply forces/torques with PyBullet method
         self.stateId = p.saveState() # Stores state in memory rather than on disk
-    
+        
+        self.plotGranular()
 
     """Reset the robot to the home position"""
     def defineHomePosition(self):
@@ -172,6 +178,19 @@ class HoppingRobotEnv(gym.Env):
         self.foot_points.append(p.addUserDebugLine([foot_x - 0.025, foot_y - 0.025, foot_z - 0.025], [foot_x, foot_y, foot_z], [1, 0, 0]))
         self.body_points.append(p.addUserDebugLine([body_x - 0.025, body_y - 0.025, body_z + 0.2], [body_x, body_y, body_z + 0.2 + 0.025], [0, 0, 1]))
 
+    def plotGranular(self):
+        x_value = -1.0
+        y_min = -1.0
+        y_max = 1.0
+        z_min = 0.0
+        z_max = self.granularDepth
+        
+        y_values = np.linspace(y_min, y_max, num = 100)
+        z_values = np.linspace(y_min, z_max, num = 100)
+
+        for z_value in z_values:
+            self.body_points.append(p.addUserDebugLine([x_value, y_min, z_value], [x_value, y_max, z_value], [1.0, 0, 0]))
+    
 
     def step(self, action):
         
@@ -182,16 +201,13 @@ class HoppingRobotEnv(gym.Env):
         gamma = np.sqrt(foot_dy**2 + foot_dz**2) 
         beta = foot_roll
         
-        # else if (in bed) manually set the grf
-        # else if (on bottom) let grf be PyBullet defined
-        
         if (self.visualizeTrajectory):
             self.plotPosition()
 
         customGRF = False
-        if (foot_z < 0.3 and foot_z > 0.0001):
+        if (foot_z < self.granularDepth and foot_z > 0.0001):
             customGRF = True
-
+            
         grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)
           
         # Step forward some finite number of seconds or milliseconds
@@ -201,6 +217,7 @@ class HoppingRobotEnv(gym.Env):
             # Must call this each time we stepSimulation
             
             if (customGRF):
+                print(grf_z)
                 p.applyExternalForce(self.hopper, foot_index, [0, grf_y, grf_z], [0.0, 0.0, 0.0], p.LINK_FRAME) 
                 p.applyExternalTorque(self.hopper, foot_index, [torque, 0, 0], p.LINK_FRAME)
             
