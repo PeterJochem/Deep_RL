@@ -8,9 +8,9 @@ import keras
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 
-absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
+absolute_path_urdf = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
 #absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
-absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/model2.h5"
+absolute_path_neural_net = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/model2.h5"
 
 class HoppingRobotEnv(gym.Env):       
     
@@ -30,8 +30,10 @@ class HoppingRobotEnv(gym.Env):
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) #optionally
         p.setGravity(0, 0, -10)
 
-        p.loadURDF("plane.urdf")
-        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.6], useFixedBase = False)
+        self.plane = p.loadURDF("plane.urdf")
+        p.setCollisionFilterGroupMask(self.plane, -1, 0, 0) 
+        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.4], useFixedBase = False)
+        p.setCollisionFilterGroupMask(self.hopper, -1, 0, 0)
         
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
         self.homePositionAngles = [0.0, 0.0, 0.0]
@@ -46,8 +48,8 @@ class HoppingRobotEnv(gym.Env):
         self.body_points = []
         
         self.granular_points = [] # For visualizing the granular material
-
         activeJoint = 0
+
         for j in range (p.getNumJoints(self.hopper)):
             
             # Why set the damping factors to 0?
@@ -63,11 +65,14 @@ class HoppingRobotEnv(gym.Env):
                 #p.resetJointState(self.hopper, j, self.homePositionAngles[activeJoint])
                 activeJoint = activeJoint + 1
 
-    
         p.setRealTimeSimulation(0) # Must do this to apply forces/torques with PyBullet method
-        self.stateId = p.saveState() # Stores state in memory rather than on disk
-        
         self.plotGranular()
+        enableCollision= 1
+        p.setCollisionFilterPair(self.plane, self.hopper, -1, 3, enableCollision)
+        p.setCollisionFilterPair(self.plane, self.hopper, -1, 2, enableCollision)
+        p.setCollisionFilterPair(self.plane, self.hopper, -1, 1, enableCollision)
+        self.stateId = p.saveState() # Stores state in memory rather than on disk
+
 
     """Reset the robot to the home position"""
     def defineHomePosition(self):
@@ -181,16 +186,48 @@ class HoppingRobotEnv(gym.Env):
     def plotGranular(self):
         x_value = -1.0
         y_min = -1.0
-        y_max = 1.0
+        y_max = 4.0
         z_min = 0.0
-        z_max = self.granularDepth
+        z_max = self.granularDepth    
+        z_values = np.linspace(z_min, z_max, num = 100)
         
-        y_values = np.linspace(y_min, y_max, num = 100)
-        z_values = np.linspace(y_min, z_max, num = 100)
-
+        # Plot Plane 1
         for z_value in z_values:
-            self.body_points.append(p.addUserDebugLine([x_value, y_min, z_value], [x_value, y_max, z_value], [1.0, 0, 0]))
-    
+            self.granular_points.append(p.addUserDebugLine([x_value, y_min, z_value], [x_value, y_max, z_value], [1.0, 0, 0]))
+         
+        # Plot Plane 2
+        x_min = -1.0 
+        x_max = 1.0
+        y_value = -1.0
+        for z_value in z_values:
+            self.granular_points.append(p.addUserDebugLine([x_min, y_value, z_value], [x_max, y_value, z_value], [1.0, 0, 0])) 
+
+        # Plot Plane 3
+        x_value = 1.0
+        for z_value in z_values:
+            self.granular_points.append(p.addUserDebugLine([x_value, y_min, z_value], [x_value, y_max, z_value], [1.0, 0, 0]))
+        
+        # Plot Plane 2
+        x_min = -1.0
+        x_max = 1.0
+        y_value = y_max
+        for z_value in z_values:
+            self.granular_points.append(p.addUserDebugLine([x_min, y_value, z_value], [x_max, y_value, z_value], [1.0, 0, 0]))
+         
+        # Add the sand
+        sphere_radius = 0.03
+        x_values = np.linspace(x_min, x_max, num = int((x_max - x_min)/(2.5 * sphere_radius)))
+        y_values = np.linspace(y_min, y_max, num = int((y_max - y_min)/(2.5 * sphere_radius)))
+        for x in x_values:
+            for y in y_values:
+                nextSphere = p.loadURDF("/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/sphere_1cm.urdf", [x, y, sphere_radius], useFixedBase = False)
+                
+                p.setCollisionFilterGroupMask(nextSphere, -1, 0, 0)
+                enableCollision= 1
+                p.setCollisionFilterPair(self.plane, nextSphere, -1, -1, enableCollision)
+
+
+
 
     def step(self, action):
         
@@ -217,7 +254,6 @@ class HoppingRobotEnv(gym.Env):
             # Must call this each time we stepSimulation
             
             if (customGRF):
-                print(grf_z)
                 p.applyExternalForce(self.hopper, foot_index, [0, grf_y, grf_z], [0.0, 0.0, 0.0], p.LINK_FRAME) 
                 p.applyExternalTorque(self.hopper, foot_index, [torque, 0, 0], p.LINK_FRAME)
             
