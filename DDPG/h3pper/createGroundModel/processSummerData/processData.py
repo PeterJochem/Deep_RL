@@ -4,7 +4,6 @@ import random
 import matplotlib.pyplot as plt
 import warnings
 import keras 
-import tensorflow as tf
 
 """
 warnings.filterwarnings('ignore') # Gets rid of future warnings
@@ -59,11 +58,10 @@ class dataSet:
             torque_y = float(x[14])
 
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque_y])
-            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
+            newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
 
-            if (abs(grf_z) > 0.00001):
-                #if (True):
+            #if (abs(grf_z) > 0.00001):
+            if (True):
                 self.allData.append(newTrainInstance)
             
                 # Record the min and max depth for debugging and log it to console
@@ -174,7 +172,6 @@ class NeuralNetwork:
     def defineGraph_keras(self):
             
         self.useKeras = True 
-        
         self.network = keras.Sequential([
             keras.layers.Dense(100, input_dim = self.inputShape),
             keras.layers.Activation(keras.activations.relu),
@@ -188,11 +185,13 @@ class NeuralNetwork:
             keras.layers.Activation(keras.activations.relu),
             keras.layers.Dense(self.outputShape)
         ])
+
         # Set more of the model's parameters
         self.optimizer = keras.optimizers.Adam(learning_rate = 0.01)
+        
         # FIX ME - try removing the metrics - redundant
         self.network.compile(loss='mse', optimizer = self.optimizer, metrics=['mse']) 
-        
+
 
     """Train the neural network using Tensorflow directly"""
     def train_tf(self):
@@ -287,13 +286,7 @@ class NeuralNetwork:
     def train_keras(self, epochs):
         #batch_size = 1000
         self.network.fit([self.train_inputVectors], [self.train_labels], batch_size = len(self.train_inputVectors), epochs = epochs)
-        
         self.network.save('model.h5')
-        #self.network.save('model.pb', save_format='tf')
-        #from keras2cpp import export_model
-        #export_model(model, 'example.model')
-
-
 
 def main():
    
@@ -302,11 +295,12 @@ def main():
     
     #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/intrude.csv"
     dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/compiledSet.csv"   
-    #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/visualizeData/validateChrono/Nov16Data/data.csv"
     myDataSet = dataSet(dataFile)
-    myNetwork = NeuralNetwork(myDataSet)
-    myNetwork.defineGraph_keras()
-    myNetwork.train_keras(50)
+    myDataSet.plot()
+
+    #myNetwork = NeuralNetwork(myDataSet)
+    #myNetwork.defineGraph_keras()
+    #myNetwork.train_keras(100)
 
 if __name__ == "__main__":
     main()

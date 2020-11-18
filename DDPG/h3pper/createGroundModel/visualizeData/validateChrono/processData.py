@@ -34,6 +34,8 @@ class dataSet:
         self.minDepth = 1000000 
         self.maxDepth = -1000000
 
+        numInRange = 0
+
         for dataItem in zip(dataFile):
              
             x = dataItem[0].split(",") # [Gamma, Beta, Depth, Position_x, Position_z, Velocity x, Velocity y, Velocity Z, GRF X, GRF Y, GRF Z] - the csv file format
@@ -56,14 +58,16 @@ class dataSet:
             velocity_z = float(x[9])/100.0
             theta_dt = float(x[11]) 
 
+            # What units are these in?
             torque_y = float(x[14])
 
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque_y])
-            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
+            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z, torque_y]) 
+            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_z])
 
-            if (abs(grf_z) > 0.00001):
-                #if (True):
+            #if (abs(grf_z) > 0.00001):
+            #if (depth > 0.000001):
+            if (True):
                 self.allData.append(newTrainInstance)
             
                 # Record the min and max depth for debugging and log it to console
@@ -71,7 +75,15 @@ class dataSet:
                     self.minDepth = depth
                 if (depth > self.maxDepth):
                     self.maxDepth = depth
-    
+            
+            #print(depth)
+
+            if (depth > 0.0046 and depth < 0.0611):
+                numInRange = numInRange + 1
+                
+
+
+        print("The number of items in the range is " + str(numInRange))
         self.logStats()
         
     def logStats(self):
@@ -178,12 +190,12 @@ class NeuralNetwork:
         self.network = keras.Sequential([
             keras.layers.Dense(100, input_dim = self.inputShape),
             keras.layers.Activation(keras.activations.relu),
-            keras.layers.Dense(200),
-            keras.layers.Activation(keras.activations.relu),
-            keras.layers.Dense(100),
-            keras.layers.Activation(keras.activations.relu),
-            keras.layers.Dense(50),
-            keras.layers.Activation(keras.activations.relu),
+            #keras.layers.Dense(200),
+            #keras.layers.Activation(keras.activations.relu),
+            #keras.layers.Dense(100),
+            #keras.layers.Activation(keras.activations.relu),
+            #keras.layers.Dense(50),
+            #keras.layers.Activation(keras.activations.relu),
             keras.layers.Dense(14),
             keras.layers.Activation(keras.activations.relu),
             keras.layers.Dense(self.outputShape)
@@ -290,23 +302,17 @@ class NeuralNetwork:
         
         self.network.save('model.h5')
         #self.network.save('model.pb', save_format='tf')
-        #from keras2cpp import export_model
-        #export_model(model, 'example.model')
-
-
 
 def main():
    
     # Create a datset object with all our data
-    #dataFile = "../../dataSets/dset3/allData/compiledSet.csv"
-    
-    #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/intrude.csv"
-    dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/compiledSet.csv"   
-    #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/visualizeData/validateChrono/Nov16Data/data.csv"
+    #dataFile = "small_data_set/data.csv"   
+    dataFile = "Nov16Data/data.csv"
     myDataSet = dataSet(dataFile)
+    
     myNetwork = NeuralNetwork(myDataSet)
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(50)
+    myNetwork.train_keras(10)
 
 if __name__ == "__main__":
     main()

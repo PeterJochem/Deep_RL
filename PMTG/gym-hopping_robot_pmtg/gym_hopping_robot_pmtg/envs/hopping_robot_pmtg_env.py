@@ -10,13 +10,13 @@ import numpy as np
 import modern_robotics as mr
 from scipy.spatial.transform import Rotation as R
 import sys
-sys.path.append("/home/peter/Desktop/Deep_RL/PMTG/h3pper/wrench_generator")
+sys.path.append("/home/peterjochem/Desktop/Deep_RL/PMTG/h3pper/wrench_generator")
 from trajectory_generator import trajectory_interpolator 
 
 #absolute_path_urdf = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/hopping_robot.urdf"
-absolute_path_urdf = "/home/peter/Desktop/Deep_RL/PMTG/gym-hopping_robot_pmtg/gym_hopping_robot_pmtg/envs/urdf/hopping_robot.urdf"
-absolute_path_neural_net = "/home/peter/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
-absolute_path_trajectories = "/home/peter/Desktop/Deep_RL/PMTG/h3pper/wrench_generator/data/CSVs/zeta_1.0/"
+absolute_path_urdf = "/home/peterjochem/Desktop/Deep_RL/PMTG/gym-hopping_robot_pmtg/gym_hopping_robot_pmtg/envs/urdf/hopping_robot.urdf"
+absolute_path_neural_net = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/neural_networks/model2.h5"  
+absolute_path_trajectories = "/home/peterjochem/Desktop/Deep_RL/PMTG/h3pper/wrench_generator/data/CSVs/zeta_1.0/"
 
 class HoppingRobot_PmtgEnv(gym.Env):       
     
@@ -36,7 +36,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
         p.setGravity(0, 0, -10)
 
-        p.loadURDF("plane.urdf")
+        self.plane = p.loadURDF("plane.urdf")
         self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.4], useFixedBase = False)
         
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
@@ -52,11 +52,11 @@ class HoppingRobot_PmtgEnv(gym.Env):
         
         self.periodTimes = np.linspace(self.minTime, self.maxTime, num = len(self.u_y))
         self.time = 0.0
-
-        """plt.plot(self.time, self.u_y, 'ro')
-        plt.plot(self.time, self.u_z, 'bo')
-        plt.plot(self.time, self.u_theta, 'go')
-        plt.show()"""
+        self.granularDepth = 0.3
+        
+        self.granular_points = []
+        self.foot_points = []
+        self.body_points = []
 
         # Setup the debugParam sliders
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10) 
@@ -83,6 +83,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
 
     
         p.setRealTimeSimulation(0) # Must do this to apply forces/torques with PyBullet method
+        self.plotGranular()
         self.stateId = p.saveState() # Stores state in memory rather than on disk
     
 
@@ -288,7 +289,53 @@ class HoppingRobot_PmtgEnv(gym.Env):
         self.time = self.time + (3) * (1.0/240.0)
         isOver = self.checkForEnd()
         return self.computeObservation(), self.computeReward(isOver), isOver, None
-     
+        
+    def plotGranular(self):
+        x_value = -1.0
+        y_min = -1.0
+        y_max = 4.0
+        z_min = 0.0
+        z_max = self.granularDepth
+        z_values = np.linspace(z_min, z_max, num = 100)
+        delta = 0.1
+
+        # Plot Plane 1
+        for z_value in z_values:
+            self.granular_points.append(p.addUserDebugLine([x_value - delta, y_min - delta, z_value], [x_value - delta, y_max + delta, z_value], [1.0, 0, 0]))
+
+        # Plot Plane 2
+        x_min = -1.0
+        x_max = 1.0
+        y_value = -1.0
+        for z_value in z_values:
+            self.granular_points.append(p.addUserDebugLine([x_min - delta, y_value - delta, z_value], [x_max + delta, y_value - delta, z_value], [1.0, 0, 0]))
+
+        # Plot Plane 3
+        x_value = 1.0
+        for z_value in z_values:
+            self.granular_points.append(p.addUserDebugLine([x_value + delta, y_min - delta, z_value], [x_value + delta, y_max + delta, z_value], [1.0, 0, 0]))
+
+        # Plot Plane 4
+        x_min = -1.0
+        x_max = 1.0
+        y_value = y_max
+        for z_value in z_values:
+            self.granular_points.append(p.addUserDebugLine([x_min - delta, y_value + delta, z_value], [x_max + delta, y_value + delta, z_value], [1.0, 0, 0]))
+
+        # Add the sand
+        sphere_radius = 0.03
+        x_values = np.linspace(x_min, x_max, num = int((x_max - x_min)/(2.5 * sphere_radius)))
+        y_values = np.linspace(y_min, y_max, num = int((y_max - y_min)/(2.5 * sphere_radius)))
+        for x in x_values:
+            for y in y_values:
+                nextSphere = p.loadURDF("/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/gym-hopping_robot/gym_hopping_robot/envs/hopping_robot/urdf/sphere_1cm.urdf", [x, y, sphere_radius], useFixedBase = False)
+
+                p.setCollisionFilterGroupMask(nextSphere, -1, 0, 0)
+                enableCollision= 1
+                p.setCollisionFilterPair(self.plane, nextSphere, -1, -1, enableCollision)
+
+
+
     def getFootState(self):
         
         """Server keeps two lists. One of links and one of joints. These are the indexes into those lists"""

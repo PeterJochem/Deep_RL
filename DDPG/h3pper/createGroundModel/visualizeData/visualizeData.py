@@ -4,7 +4,6 @@ import random
 import matplotlib.pyplot as plt
 import warnings
 import keras 
-import tensorflow as tf
 
 """
 warnings.filterwarnings('ignore') # Gets rid of future warnings
@@ -34,6 +33,15 @@ class dataSet:
         self.minDepth = 1000000 
         self.maxDepth = -1000000
 
+        minTime = 0.0
+        maxTime = 0.1 # Total time or time after being released?
+        angle = 30.0 * (2 * np.pi/360.0)
+        angle_range = 8.0 * (2 * np.pi/360.0)
+
+        depthData = []
+        timeData = []
+        priorTime = -1.0
+
         for dataItem in zip(dataFile):
              
             x = dataItem[0].split(",") # [Gamma, Beta, Depth, Position_x, Position_z, Velocity x, Velocity y, Velocity Z, GRF X, GRF Y, GRF Z] - the csv file format
@@ -44,10 +52,12 @@ class dataSet:
             """
             
             # Convert everything to SI units
+            time = float(x[0])
             gamma = float(x[1])  # / 3.14 # The angles are in radians
             beta = float(x[2]) # / 3.14
             #depth = -1 *cfloat(x[3])/100.0 # Convert cm to m - Chen Li uses cm^3 
             depth = float(x[3])/100.0
+            position_x = float(x[4])/100.0
 
             grf_x = float(x[16]) 
             grf_z = float(x[18]) 
@@ -55,23 +65,23 @@ class dataSet:
             velocity_x = float(x[7])/100.0 # Convert to meters 
             velocity_z = float(x[9])/100.0
             theta_dt = float(x[11]) 
-
             torque_y = float(x[14])
 
-            #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque_y])
-            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
+            C1 = (beta > angle) and (beta < (angle + angle_range))
+            C2 = (beta < angle) and (beta > (angle - angle_range))
+            C3 = (beta == angle)
+            if ((C1 or C2 or C3) and (time > priorTime) and (time > 2.3) and (time < 2.8)):
+                #if (time > priorTime):
+                depthData.append(depth * 100)
+                #depthData.append()
+                timeData.append(time)
+                priorTime = time
+        
+        # Plot the data like Dan does
+        print(timeData)
+        plt.plot(timeData, depthData) 
+        plt.show()
 
-            if (abs(grf_z) > 0.00001):
-                #if (True):
-                self.allData.append(newTrainInstance)
-            
-                # Record the min and max depth for debugging and log it to console
-                if (depth < self.minDepth):
-                    self.minDepth = depth
-                if (depth > self.maxDepth):
-                    self.maxDepth = depth
-    
         self.logStats()
         
     def logStats(self):
@@ -98,6 +108,29 @@ class dataSet:
             test_labels.append(testSet[i].label)
 
         return train_inputVectors, train_labels, test_inputVectors, test_labels
+    
+    """Plot data in a similiar format to Dan's Matlab plot"""
+    def plot(self):
+        
+        minTime = 0.0
+        maxTime = 0.1 # Total time or time after being released?
+        angle = 30.0 * (2 * np.pi/360.0)  
+        angle_range = 5.0 * (2 * np.pi/360.0)
+                
+        depthData = []
+        for instance in self.allData:
+            gamma, beta, depth = instance.inputVector[0]
+            #[gamma, beta, depth], [grf_x, grf_z] 
+
+            C1 = (gamma > angle) and (gamma < (angle + angle_range))
+            C2 = (gamma < angle) and (gamma > (angle - angle_range))
+            C3 = (gamma == angle)
+            if (C1 or C2 or C3):
+                depthData.append()
+                        
+
+
+
 
 
 """Wrapper class for a Tensorflow neural network"""
@@ -174,7 +207,6 @@ class NeuralNetwork:
     def defineGraph_keras(self):
             
         self.useKeras = True 
-        
         self.network = keras.Sequential([
             keras.layers.Dense(100, input_dim = self.inputShape),
             keras.layers.Activation(keras.activations.relu),
@@ -188,11 +220,13 @@ class NeuralNetwork:
             keras.layers.Activation(keras.activations.relu),
             keras.layers.Dense(self.outputShape)
         ])
+
         # Set more of the model's parameters
         self.optimizer = keras.optimizers.Adam(learning_rate = 0.01)
+        
         # FIX ME - try removing the metrics - redundant
         self.network.compile(loss='mse', optimizer = self.optimizer, metrics=['mse']) 
-        
+
 
     """Train the neural network using Tensorflow directly"""
     def train_tf(self):
@@ -287,13 +321,7 @@ class NeuralNetwork:
     def train_keras(self, epochs):
         #batch_size = 1000
         self.network.fit([self.train_inputVectors], [self.train_labels], batch_size = len(self.train_inputVectors), epochs = epochs)
-        
         self.network.save('model.h5')
-        #self.network.save('model.pb', save_format='tf')
-        #from keras2cpp import export_model
-        #export_model(model, 'example.model')
-
-
 
 def main():
    
@@ -302,11 +330,12 @@ def main():
     
     #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/intrude.csv"
     dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/compiledSet.csv"   
-    #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/visualizeData/validateChrono/Nov16Data/data.csv"
     myDataSet = dataSet(dataFile)
-    myNetwork = NeuralNetwork(myDataSet)
-    myNetwork.defineGraph_keras()
-    myNetwork.train_keras(50)
+    #myDataSet.plot()
+
+    #myNetwork = NeuralNetwork(myDataSet)
+    #myNetwork.defineGraph_keras()
+    #myNetwork.train_keras(100)
 
 if __name__ == "__main__":
     main()

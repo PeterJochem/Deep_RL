@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import warnings
 import keras 
 import tensorflow as tf
+import math
 
 """
 warnings.filterwarnings('ignore') # Gets rid of future warnings
@@ -36,34 +37,33 @@ class dataSet:
 
         for dataItem in zip(dataFile):
              
-            x = dataItem[0].split(",") # [Gamma, Beta, Depth, Position_x, Position_z, Velocity x, Velocity y, Velocity Z, GRF X, GRF Y, GRF Z] - the csv file format
-            
-            # intrude.cpp
-            """
-             t << ", " << gamma << ", " << beta << ", " << depth << ", " << position_x << ", " << position_y << ", " << position_z << ", " << x_dt << ", " << y_dt << ", " << z_dt << ", " << plate_ang_vel[0] << ", " << plate_ang_vel[1] << ", " << plate_ang_vel[2] << ", " << torque_x << ", " << torque_y << ", " << torque_z << ", " << grf_x << ", " << grf_y << ", " << grf_z << "\n";
-            """
-            
+            x = dataItem[0].split(",") 
+
             # Convert everything to SI units
-            gamma = float(x[1])  # / 3.14 # The angles are in radians
-            beta = float(x[2]) # / 3.14
+            
+            pos_x = float(x[0])
+            velocity_x = float(x[1])
+            pos_z = float(x[2])
+            velocity_z = float(x[3])
+            angular_vel = float(x[5])
+            grf_x = float(x[6])
+            grf_z = float(x[7])
+            torque_y = float(x[8])
+            
+            depth = float(pos_z)
+
+            beta = float(x[4])
+            gamma = math.atan2(velocity_z, velocity_x)
+
             #depth = -1 *cfloat(x[3])/100.0 # Convert cm to m - Chen Li uses cm^3 
             depth = float(x[3])/100.0
-
-            grf_x = float(x[16]) 
-            grf_z = float(x[18]) 
             
-            velocity_x = float(x[7])/100.0 # Convert to meters 
-            velocity_z = float(x[9])/100.0
-            theta_dt = float(x[11]) 
+            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, angular_vel], [grf_x, grf_z, torque_y])
+            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z, torque_y]) 
 
-            torque_y = float(x[14])
-
-            #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque_y])
-            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
-
-            if (abs(grf_z) > 0.00001):
-                #if (True):
+            #if (abs(grf_z) > 0.00001):
+            #if (depth > 0.000001):
+            if (True):
                 self.allData.append(newTrainInstance)
             
                 # Record the min and max depth for debugging and log it to console
@@ -290,23 +290,16 @@ class NeuralNetwork:
         
         self.network.save('model.h5')
         #self.network.save('model.pb', save_format='tf')
-        #from keras2cpp import export_model
-        #export_model(model, 'example.model')
-
-
 
 def main():
    
     # Create a datset object with all our data
-    #dataFile = "../../dataSets/dset3/allData/compiledSet.csv"
-    
-    #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/intrude.csv"
-    dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/compiledSet.csv"   
-    #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/visualizeData/validateChrono/Nov16Data/data.csv"
+    dataFile = "data.csv"   
     myDataSet = dataSet(dataFile)
+    
     myNetwork = NeuralNetwork(myDataSet)
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(50)
+    myNetwork.train_keras(500)
 
 if __name__ == "__main__":
     main()

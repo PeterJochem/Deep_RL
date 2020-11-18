@@ -190,29 +190,30 @@ class HoppingRobotEnv(gym.Env):
         z_min = 0.0
         z_max = self.granularDepth    
         z_values = np.linspace(z_min, z_max, num = 100)
-        
+        delta = 0.1
+
         # Plot Plane 1
         for z_value in z_values:
-            self.granular_points.append(p.addUserDebugLine([x_value, y_min, z_value], [x_value, y_max, z_value], [1.0, 0, 0]))
+            self.granular_points.append(p.addUserDebugLine([x_value, y_min - delta, z_value], [x_value, y_max + delta, z_value], [1.0, 0, 0]))
          
         # Plot Plane 2
         x_min = -1.0 
         x_max = 1.0
         y_value = -1.0
         for z_value in z_values:
-            self.granular_points.append(p.addUserDebugLine([x_min, y_value, z_value], [x_max, y_value, z_value], [1.0, 0, 0])) 
+            self.granular_points.append(p.addUserDebugLine([x_min - delta, y_value, z_value], [x_max + delta, y_value, z_value], [1.0, 0, 0])) 
 
         # Plot Plane 3
         x_value = 1.0
         for z_value in z_values:
-            self.granular_points.append(p.addUserDebugLine([x_value, y_min, z_value], [x_value, y_max, z_value], [1.0, 0, 0]))
+            self.granular_points.append(p.addUserDebugLine([x_value, y_min - delta, z_value], [x_value, y_max + delta, z_value], [1.0, 0, 0]))
         
         # Plot Plane 2
         x_min = -1.0
         x_max = 1.0
         y_value = y_max
         for z_value in z_values:
-            self.granular_points.append(p.addUserDebugLine([x_min, y_value, z_value], [x_max, y_value, z_value], [1.0, 0, 0]))
+            self.granular_points.append(p.addUserDebugLine([x_min - delta, y_value, z_value], [x_max + delta, y_value, z_value], [1.0, 0, 0]))
          
         # Add the sand
         sphere_radius = 0.03
