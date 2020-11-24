@@ -6,13 +6,30 @@ The dataset Juntao and Dan used over the summer should go in the dataset folder.
 
 # How to Recreate My Graphs
 In Matlab, run <br /> 
-```init_env.m```, ```init_params.m``` then run ```eval_foot_gpm("path_to_simualation_data")``` <br />
+```init_env.m```, ```init_params.m``` then run ```eval_foot_gpm("path_to_simulation_data")``` <br />
 
-The path_to_simulation_data is the global path to one of the directories in the dataset/unforced_gpm/ directories. For example, on my computer, in Matlab, I would run ```eval_foot_gpm("/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/validateModel/DEM_RFT_Comparisons/dataset/unforced_gpm/data_set/v_minus_5")```. This will do the comparisons of both models and the ground truth simulation data for a single simulation of the experiment. Each experiment uses a diffrent velocity and so you need to run ```eval_foot_gpm(_____) ``` on each directory in dataset/unforced_gpm/data_set/ to view how the model performs across a wide range of veocities. 
+The path_to_simulation_data is the global path to one of the directories in the dataset/unforced_gpm/ directories. For example, on my computer, in Matlab, I would run ```eval_foot_gpm("/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/validateModel/DEM_RFT_Comparisons/dataset/unforced_gpm/data_set/v_minus_5")```. This will do the comparisons of both models and the ground truth simulation data for a single simulation of the experiment. Each experiment uses a diffrent velocity and so you need to run ```eval_foot_gpm("path_to_simulation_data") ``` on each directory in dataset/unforced_gpm/data_set/ to view how the model performs across a wide range of velocities. 
+
+# Results
+
+![Initial Velocity = -1 cm/s](media/velocity_minus_1_results.png) <br />
+
+![Initial Velocity = -2 cm/s](media/velocity_minus_2_results.png) <br />
+
+![Initial Velocity = -5 cm/s](media/velocity_minus_5_results.png) <br />
+
+![Initial Velocity = -10 cm/s](media/velocity_minus_10_results.png) <br />
+
+![Initial Velocity = -20 cm/s](media/velocity_minus_20_results.png) <br />
+
+![Initial Velocity = -30 cm/s](media/velocity_minus_30_results.png) <br />
+
+![Initial Velocity = -40 cm/s](media/velocity_minus_40_results.png) <br />
+
+![Initial Velocity = -50 cm/s](media/velocity_minus_50_results.png) <br />
 
 
 # Files in Repo 
-
 ```eval_foot_gpm.m```: Highest level Matlab code for comparing the DEM data, RFT models, and neural network models of the ground. <br />   
 
 ```groundReactionModel1.m```: Matlab class for a neural network mapping [gamma, beta, depth] -> [ground reaction force x, ground reaction force z, torque] <br />
