@@ -58,7 +58,7 @@ class dataSet:
             #depth = -1 *cfloat(x[3])/100.0 # Convert cm to m - Chen Li uses cm^3 
             depth = float(x[3])/100.0
             
-            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, angular_vel], [grf_x, grf_z, torque_y])
+            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque_y])
             #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z, torque_y]) 
 
             #if (abs(grf_z) > 0.00001):
