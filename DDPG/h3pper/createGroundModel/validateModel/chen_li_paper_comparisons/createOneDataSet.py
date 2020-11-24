@@ -1,5 +1,4 @@
-""" Describe this file """
-
+""" This is a utility file for taking a list of csv files and combinig them into one """
 
 def addFile(fileName, outputFile): 
     newFile = open(fileName, "r")
@@ -11,8 +10,7 @@ def addFile(fileName, outputFile):
 """Open the file for writing. The file is created if it does not exist.
 The handle is positioned at the end of the file. The data being written
 will be inserted at the end, after the existing data. """
-
-dataDirectory = "low_speed_data/"
+dataDirectory = "dataset/"
 outputFile = open(str(dataDirectory) + "compiledSet.csv", 'a')  
 
 # Could give it a directory that is only .csv files rather than listing the files individually
