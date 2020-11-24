@@ -32,10 +32,13 @@ Below is a visualization Juntao created of what the simulated environment looks 
 The first image is from Chen Li's [Terradynamics paper](https://arxiv.org/abs/1303.7065). They ran physical experiments to measure the stress per unit depth of a plate as it is driven into granular material. Juntao replicated the physical experiment in a DEM simulation and gathered the same data. Below is an image of the (filtered) raw data from the Chronos simulations. This data was filtered to only contain data points with a depth in the interval of (X, Y). This data is very similiar to the physical experimental data collected by the Chen Li group.    
 
 ![Chen Li Experimental Data](media/stress_data_original.png "Chen Li Experimental Data") <br />
+Chen Li's experimental data <br />
 
 ![Chrono Simulated Data](media/DEM_raw_data.png "Chrono Simulation Data") <br />
+Juntao's DEM simulation data <br />
 
-![Learned Mapping](media/learnedMapping.png "Learned Mapping")
+![Learned Mapping](media/learnedMapping.png "Learned Mapping") <br />
+Neural Network's learned representation of the DEM dataset <br /> 
 
 # How to Replicate What I Did
 ```python3 createOneDataSet.py``` <br />
