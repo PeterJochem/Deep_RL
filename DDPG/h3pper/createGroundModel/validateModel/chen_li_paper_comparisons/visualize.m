@@ -48,6 +48,10 @@ for k = 1:numel(depths)
         for j = 1:numel(gammas)
             [grf1_x(k,i,j), grf1_y(k,i,j)] = grfModel1.computeGRF(gammas(j),betas(i),depths(k));
             
+            grf1_x(k,i,j) = grf1_x(k,i,j)/depths(k);
+            grf1_y(k,i,j) = grf1_y(k,i,j)/depths(k);
+            
+            
             %  [grf2_x(k,i,j),grf2_y(k,i,j),grm2_z(i,j)] = ...
             %   grfModel2.computeGRF(gammas(j),betas(i),depths(k),...
             %   dx_dt, dy_dt, dtheta_dt);
