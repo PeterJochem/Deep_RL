@@ -45,7 +45,7 @@ The dataset for generating the plots of the model's predictions as we increase t
 
 # How Does The Model Vary over Depth?
 I trained a neural network to map (gamma, beta, depth) -> (ground reaction force-x, ground reaction force-z). This can then be used to look into how the model's forces change as the plate is driven furter into the granular material. Dan helped me create a visualization in Matlab of the model's mapping as the plate goes to deeper depths. Below is the visualization <br/> 
-![Learned Mapping Across Depth](media/animate_both_models.gif "Learned Mapping Across Depth") <br />
+![Learned Mapping Across Depth](media/Force_over_depth.gif "Learned Mapping Across Depth") <br />
 Graph4: Neural Network's learned representation as the foot's depth increases <br /> <br /> 
 
 # How to Replicate What I Did
