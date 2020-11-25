@@ -48,6 +48,11 @@ I trained a neural network to map (gamma, beta, depth) -> (ground reaction force
 ![Learned Mapping Across Depth](media/Force_over_depth.gif "Learned Mapping Across Depth") <br />
 Graph4: Neural Network's learned representation as the foot's depth increases <br /> <br /> 
 
+I also used the same code used to generate Graph4 and plotted the Force/depth as the foot's depth increases. I had to scale the axes differently because the initial contact has such a high value as the depth is so small. Below is the visualization. <br />
+![Learned Mapping Across Depth](media/force_per_depth.gif "Learned Mapping Across Depth") <br />
+Graph5: Neural Network's learned representation of the Force/depth as the foot's depth increases <br /> > <br /> 
+
+
 # How to Replicate What I Did
 In order to make a neural network, train it on the dataset, and create plots (Graph3 above) to compare with the Terradynamics paper plots (Graph1 above), run ```python3 createOneDataSet.py``` and then ```python3 processData.py``` <br />
 

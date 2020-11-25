@@ -24,7 +24,7 @@ clc;
 %init_env();
 
 %% Import learned GRF models
-grfModel1 = groundReactionModel2;
+grfModel1 = groundReactionModel1;
 
 %% Parametertic Exploration 1:
 % Vary the foot tilt ("beta"), angle of intrusion ("gamma"), and depth
@@ -33,7 +33,7 @@ grfModel1 = groundReactionModel2;
 
 betas = linspace(-pi/2,pi/2,11);
 gammas = linspace(-pi/2,pi/2,11);
-depths = linspace(0,0.12,200);
+depths = linspace(0.02,0.12,20);
 
 % preallocate arrays for grf1 (corresponds to grfModel1):
 grf1_x = zeros(11,11,11);
@@ -50,11 +50,7 @@ for k = 1:numel(depths)
             
             grf1_x(k,i,j) = grf1_x(k,i,j)/depths(k);
             grf1_y(k,i,j) = grf1_y(k,i,j)/depths(k);
-            
-            
-            %  [grf2_x(k,i,j),grf2_y(k,i,j),grm2_z(i,j)] = ...
-            %   grfModel2.computeGRF(gammas(j),betas(i),depths(k),...
-            %   dx_dt, dy_dt, dtheta_dt);
+
         end
     end
 end
