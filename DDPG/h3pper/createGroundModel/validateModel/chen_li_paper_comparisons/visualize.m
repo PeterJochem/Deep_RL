@@ -24,7 +24,7 @@ clc;
 %init_env();
 
 %% Import learned GRF models
-grfModel1 = groundReactionModel1;
+grfModel1 = groundReactionModel2;
 
 %% Parametertic Exploration 1:
 % Vary the foot tilt ("beta"), angle of intrusion ("gamma"), and depth

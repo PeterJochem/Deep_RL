@@ -39,7 +39,9 @@ Graph1: Chen Li's experimental data <br /> <br />
 Graph2: Juntao's DEM simulation data <br /> <br />
 
 ![Learned Mapping](media/learnedMapping.png "Learned Mapping") <br />
-Graph3: Neural Network's learned representation of the DEM dataset <br /> <br /> <br />
+Graph3: Neural Network's learned representation of the DEM dataset <br />
+The dataset for generating the plots of the model's predictions as we increase the depth is slightly diffrent. This data is available [here](../../DEM_RFT_Comparisons/dataset/neural_net_data). This is the dataset I have been using to train the neural networks in the ../../DEM_RFT_Comparisons code.
+<br /> <br />
 
 # How Does The Model Vary over Depth?
 I trained a neural network to map (gamma, beta, depth) -> (ground reaction force-x, ground reaction force-z). This can then be used to look into how the model's forces change as the plate is driven furter into the granular material. Dan helped me create a visualization in Matlab of the model's mapping as the plate goes to deeper depths. Below is the visualization <br/> 

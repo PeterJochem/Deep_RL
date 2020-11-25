@@ -62,10 +62,10 @@ class dataSet:
             torque_y = float(x[14])
 
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z, torque_y]) 
-            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_z])
+            newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z]) 
+            #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_z])
 
-            #if (abs(grf_z) > 0.00001):
+            # if (abs(grf_z) > 0.00001):
             #if (depth > 0.000001):
             if (True):
                 self.allData.append(newTrainInstance)
@@ -80,8 +80,7 @@ class dataSet:
 
             if (depth > 0.0046 and depth < 0.0611):
                 numInRange = numInRange + 1
-                
-
+               
 
         print("The number of items in the range is " + str(numInRange))
         self.logStats()
@@ -307,12 +306,13 @@ def main():
    
     # Create a datset object with all our data
     #dataFile = "small_data_set/data.csv"   
-    dataFile = "Nov16Data/data.csv"
+    dataFile = "Nov16Data/data.csv" # Mostly works for neural net
+
     myDataSet = dataSet(dataFile)
     
     myNetwork = NeuralNetwork(myDataSet)
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(10)
+    myNetwork.train_keras(100)
 
 if __name__ == "__main__":
     main()

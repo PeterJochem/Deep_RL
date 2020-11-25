@@ -48,12 +48,12 @@ class dataSet:
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
             #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z, torque_y]) 
             #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z])
-            newTrainInstance = trainInstance([gamma, beta], [grf_x/depth, grf_z/depth])
+            newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z])
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_z])
 
-            if (abs(grf_z) > 0.0001):
-                #if (depth > 0.000001):
-                #if (True):
+            #if (abs(grf_z) > 0.0001):
+            #if (depth > 0.000001):
+            if (True):
                 self.allData.append(newTrainInstance)
             
                 # Record the min and max depth for debugging and log it to console
@@ -163,7 +163,7 @@ class NeuralNetwork:
         self.optimizer = keras.optimizers.Adam(learning_rate = 0.001)
         
         # use mae
-        self.network.compile(loss='mae', optimizer = self.optimizer, metrics=['mse'])
+        self.network.compile(loss='mse', optimizer = self.optimizer, metrics=['mse'])
 
     
     def createPlots(self, F_Z, F_X, useDefaultMap = False, customLimits = False):
@@ -209,7 +209,8 @@ class NeuralNetwork:
         self.network.fit([self.train_inputVectors], [self.train_labels], batch_size = 32, epochs = epochs)
 
         self.network.save('model.h5')
-         
+        
+        """
         angle_resolution = 20
         angle_increment = 180.0 / angle_resolution # Remember we are using DEGREES
 
@@ -228,6 +229,7 @@ class NeuralNetwork:
                 F_Z[i][j] = prediction[0][1]
 
         self.createPlots(F_Z, F_X, False, True)
+        """
 
 def main():
    

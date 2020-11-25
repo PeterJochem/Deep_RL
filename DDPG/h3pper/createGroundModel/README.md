@@ -36,10 +36,6 @@ velocity_z (m/s) - The foot's velocity in the z-direction <br />
 ground reaction force x (N) - The force in the x-direction that the ground exerts on the foot <br />
 ground reaction force z (N) - The force in the z-direction that the ground exerts on the foot <br />
 
-### Coordinate System
-INSERT AN IMAGE OF THE COORDINATE SYSTEM 
-
-
 ## Units
 I used standard SI units, and radians for angles. Sidenote: the Chrono simulations default to CGS
 
