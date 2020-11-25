@@ -46,9 +46,9 @@ dtheta_dt = -1;
 for k = 1:numel(depths)
     for i = 1:numel(betas)
         for j = 1:numel(gammas)
-            [grf1_x(k,i,j),grf1_y(k,i,j)] = ...
-                grfModel1.computeGRF(gammas(j),betas(i),depths(k));
-            %[grf2_x(k,i,j),grf2_y(k,i,j),grm2_z(i,j)] = ...
+            [grf1_x(k,i,j), grf1_y(k,i,j)] = grfModel1.computeGRF(gammas(j),betas(i),depths(k));
+            
+            %  [grf2_x(k,i,j),grf2_y(k,i,j),grm2_z(i,j)] = ...
             %   grfModel2.computeGRF(gammas(j),betas(i),depths(k),...
             %   dx_dt, dy_dt, dtheta_dt);
         end
@@ -70,7 +70,7 @@ for k = 1:numel(depths)
     subplot(2,2,1)
     surf(betas_for_surf_plot,gammas_for_surf_plot,...
         reshape(grf1_x(k,:,:),numel(betas),numel(gammas)));
-    zlim([-10.5, 50.5])
+    zlim([-10.5, 40.5])
     xlabel('$\beta$ [rad]')
     ylabel('$\gamma$ [rad]')
     zlabel('$F_x(\beta,\gamma,y_f)$ [N]')
@@ -79,13 +79,13 @@ for k = 1:numel(depths)
     subplot(2,2,2)
     surf(betas_for_surf_plot,gammas_for_surf_plot,...
         reshape(grf1_y(k,:,:),numel(betas),numel(gammas)));
-    zlim([-10.5, 50.5])
+    zlim([-10.5, 40.5])
     xlabel('$\beta$ [rad]')
     ylabel('$\gamma$ [rad]')
-    zlabel('$F_y(\beta,\gamma,y_f)$ [N]')
-    title('GRF model 1, Fy')
+    zlabel('$F_z(\beta,\gamma,y_f)$ [N]')
+    title('GRF model 1, Fz')
     
-    sgtitle(['Foot depth: $y_f =$',num2str(depths(k),3),' [m]'])
+    sgtitle(['Foot depth: ', num2str(depths(k),3),' [m]'])
     
     drawnow()
     
