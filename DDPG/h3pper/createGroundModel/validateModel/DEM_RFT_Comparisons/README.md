@@ -20,33 +20,33 @@ The path_to_simulation_data is the global path to one of the directories in the 
 # Results
 The dataset in this directory has a few sub-directories. Each one has the foot intrude into the granular material at a different initial speed. The foot is not forced into the material as it collides. For each trajectory, we plot the ground reaction force-x, ground reaction force-z, and moment as the DEM data says it is (yellow), RFT calculates it (blue), and how the neural network computes it (orange). The RFT and neural network calculations are not used to influence the foot's trajectory, we are simply recomputing what the ground reactions forces and moments are at each time step given the state of the foot in the DEM simulation. <br />     
 
-The neural network is trained on a dataset 
+The neural network is trained on an independent dataset than the trajectories shown below in yellow. 
 
 Below are the results of eval_foot_gpm on each trajectory from the DEM data.  
 
 ![Initial Velocity = -1 cm/s](media/velocity_minus_1_results.png) <br />
-An initial velocity of -1 cm/s <br />
+An initial velocity of -1 cm/s <br /> <br />
 
 ![Initial Velocity = -2 cm/s](media/velocity_minus_2_results.png) <br />
-An initial velocity of -2 cm/s <br />
+An initial velocity of -2 cm/s <br /> <br />
 
 ![Initial Velocity = -5 cm/s](media/velocity_minus_5_results.png) <br />
-An initial velocity of -5 cm/s <br />
+An initial velocity of -5 cm/s <br /> <br />
 
 ![Initial Velocity = -10 cm/s](media/velocity_minus_10_results.png) <br />
-An initial velocity of -10 cm/s <br />
+An initial velocity of -10 cm/s <br /> <br />
 
 ![Initial Velocity = -20 cm/s](media/velocity_minus_20_results.png) <br />
-An initial velocity of -20 cm/s <br />
+An initial velocity of -20 cm/s <br /> <br />
 
 ![Initial Velocity = -30 cm/s](media/velocity_minus_30_results.png) <br />
-An initial velocity of -30 cm/s <br />
+An initial velocity of -30 cm/s <br /> <br />
 
 ![Initial Velocity = -40 cm/s](media/velocity_minus_40_results.png) <br />
-An initial velocity of -40 cm/s <br />
+An initial velocity of -40 cm/s <br /> <br />
 
 ![Initial Velocity = -50 cm/s](media/velocity_minus_50_results.png) <br />
-An initial velocity of -50 cm/s <br />
+An initial velocity of -50 cm/s <br /> <br />
 
 
 # Files in Repo 

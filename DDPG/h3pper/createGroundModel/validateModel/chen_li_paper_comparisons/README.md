@@ -39,13 +39,15 @@ Graph1: Chen Li's experimental data <br /> <br />
 Graph2: Juntao's DEM simulation data <br /> <br />
 
 ![Learned Mapping](media/learnedMapping.png "Learned Mapping") <br />
-Graph3: Neural Network's learned representation of the DEM dataset <br /> <br />
+Graph3: Neural Network's learned representation of the DEM dataset <br /> <br /> <br />
 
+# How Does The Model Vary over Depth?
+I trained a neural network to map (gamma, beta, depth) -> (ground reaction force-x, ground reaction force-z). This can then be used to look into how the model's forces change as the plate is driven furter into the granular material. Dan helped me create a visualization in Matlab of the model's mapping as the plate goes to deeper depths. Below is the visualization <br/> 
 ![Learned Mapping Across Depth](media/animate_both_models.gif "Learned Mapping Across Depth") <br />
 Graph4: Neural Network's learned representation as the foot's depth increases <br /> <br /> 
 
 # How to Replicate What I Did
-In order to make a nueral network, train it on the dataset, and create plots (Graph3 above) to compare with the Terradynamics paper plots (Graph1 above), run ```python3 createOneDataSet.py``` and then ```python3 processData.py``` <br />
+In order to make a neural network, train it on the dataset, and create plots (Graph3 above) to compare with the Terradynamics paper plots (Graph1 above), run ```python3 createOneDataSet.py``` and then ```python3 processData.py``` <br />
 
 In order to create the visualization of the ground model as the plate is driven further into the material, you need to first run the steps above to create a neural network and train it on the dataset. This will create a model.h5 file. This is a file format describing the networks architecture and weights. You then need to open ```groundReactionModel.m``` in Matlab and insert the new path to the model.h5 file. To generate the visualization, you then run in Matlab, ```visualize.m```     
 
