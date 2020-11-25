@@ -175,8 +175,8 @@ int main(int argc, char* argv[]) {
     gran_sys.set_static_friction_coeff_SPH2WALL(params.static_friction_coeffS2W);
     gran_sys.set_static_friction_coeff_SPH2MESH(params.static_friction_coeffS2M);
 
-    std::string mesh_filename(GetChronoDataFile("../data/foot.obj")); 
-    std::string mesh_filename_lid = GetChronoDataFile("../data/foot.obj");
+    std::string mesh_filename(GetChronoDataFile("../../foot.obj")); 
+    std::string mesh_filename_lid = GetChronoDataFile("../../foot.obj");
 
    // std::vector<string> mesh_filenames(1,mesh_filename);
 
