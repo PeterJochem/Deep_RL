@@ -21,105 +21,16 @@ class dataSet:
     def __init__(self, dataFilePath):
         
         dataFile = open(dataFilePath, "r")
+        self.compute_meta_stats(dataFilePath)
         self.allData = []
-        
-        self.minDepth = 1000000 
-        self.maxDepth = -1000000
-            
-        all_grf_x = []
-        all_grf_z = []
-            
-        all_depth = []
-        
-        all_velocity_x = []
-        all_velocity_z = []
-        
-        all_torque = []
-        
-        for dataItem in zip(dataFile):
-            x = dataItem[0].split(",")
-            
-            grf_x = float(x[16]) #* 10.0
-            grf_z = float(x[18]) #* 10.0
-            velocity_x = float(x[7]) / 100.0 # Convert to meters
-            velocity_z = float(x[9]) / 100.0
-            torque_y = float(x[14])
-            depth = float(x[3]) / 100.0
-
-            all_grf_x.append(grf_x)
-            all_grf_z.append(grf_z)
-            
-            all_depth.append(depth)
-            
-            all_velocity_x.append(velocity_x)
-            all_velocity_z.append(velocity_z)
-
-            all_torque.append(torque_y)
-        
-            
-        std_dev_grf_x = statistics.pstdev(all_grf_x)     
-        std_dev_grf_z = statistics.pstdev(all_grf_z)
-        std_dev_depth = statistics.pstdev(all_depth)
-        std_dev_vel_x = statistics.pstdev(all_velocity_x)
-        std_dev_vel_z = statistics.pstdev(all_velocity_z)
-        std_dev_torque = statistics.pstdev(all_torque)
-        
-        avg_grf_x = statistics.mean(all_grf_x)
-        avg_grf_z = statistics.mean(all_grf_z)
-        avg_depth = statistics.mean(all_depth)
-        avg_vel_x = statistics.mean(all_velocity_x)
-        avg_vel_z = statistics.mean(all_velocity_z)
-        avg_torque = statistics.mean(all_torque)
-        
-        min_grf_x = min(all_grf_x)
-        min_grf_z = min(all_grf_z)
-        min_depth = min(all_depth)
-        min_vel_x = min(all_velocity_x)
-        min_vel_z = min(all_velocity_z)
-        min_torque = min(all_torque)
-        
-        print("avg_grf_x: " + str(avg_grf_x))
-        print("avg_grf_z: " + str(avg_grf_z))
-        print("avg_depth: " + str(avg_depth))
-        print("avg_vel_x: " + str(avg_vel_x))
-        print("avg_vel_z: " + str(avg_vel_z))
-        print("avg_torque: " + str(avg_torque))
-        
-        print("std_dev_grf_x " + str(std_dev_grf_x))
-        print("std_dev_grf_z " + str(std_dev_grf_z))
-        print("std_dev_depth " + str(std_dev_depth))
-        print("std_dev_vel_x " + str(std_dev_vel_x))
-        print("std_dev_vel_z " + str(std_dev_vel_z))
-        print("std_dev_torque " + str(std_dev_torque))
               
-        dataFile = open(dataFilePath, "r")
         for dataItem in zip(dataFile):
              
-            x = dataItem[0].split(",") # [Gamma, Beta, Depth, Position_x, Position_z, Velocity x, Velocity y, Velocity Z, GRF X, GRF Y, GRF Z] - the csv file format
+            nextLine = dataItem[0].split(",") # csv file format is in dataset/neural_net_data/README.md 
+             
+            gamma, beta, depth, grf_x, grf_z, velocity_x, velocity_z, theta_dt, torque = self.parseLine(nextLine)        
             
-            # Convert everything to SI units
-            gamma = float(x[1])  # The angles are in radians
-            beta = float(x[2]) 
-            depth = float(x[3]) / 100.0
-
-            grf_x = float(x[16]) 
-            grf_z = float(x[18])  
-
-            velocity_x = float(x[7]) / 100.0 # Convert to meters 
-            velocity_z = float(x[9]) / 100.0
-            
-            theta_dt = float(x[11]) 
-            torque = float(x[14]) 
-            
-            # Normalize the data
-            norm_depth = (depth - avg_depth)/(0.08 * std_dev_depth)
-            norm_vel_x = (velocity_x - avg_vel_x)/(0.08 * std_dev_vel_x)
-            norm_vel_z = (velocity_z - avg_vel_z) /(0.08 * std_dev_vel_z)
-
-            norm_grf_x = (grf_x - avg_grf_x)/std_dev_grf_x
-            norm_grf_z = (grf_z - avg_grf_z)/std_dev_grf_z            
-            norm_torque = (torque - avg_torque)/std_dev_torque     
-            
+            norm_depth, norm_vel_x, norm_vel_z, norm_grf_x, norm_grf_z, norm_torque = self.normalizeData(depth, velocity_x, velocity_z, grf_x, grf_z, torque)
              
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
             newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque])
@@ -128,19 +39,110 @@ class dataSet:
             #if (abs(grf_z) > 0.01):
             if (True):
                 self.allData.append(newTrainInstance)
-            
-                # Record the min and max depth for debugging and log it to console
-                if (depth < self.minDepth):
-                    self.minDepth = depth
-                if (depth > self.maxDepth):
-                    self.maxDepth = depth
-    
+         
         self.logStats()
+       
+    def parseLine(self, nextLine):
+            
+        # Convert everything to SI units
+        gamma = float(nextLine[1])  # The angles are in radians
+        beta = float(nextLine[2])
+        depth = float(nextLine[3]) / 100.0
+
+        grf_x = float(nextLine[16])
+        grf_z = float(nextLine[18])
+
+        velocity_x = float(nextLine[7]) / 100.0 # Convert to meters
+        velocity_z = float(nextLine[9]) / 100.0
+
+        theta_dt = float(nextLine[11])
+        torque = float(nextLine[14])
         
+        return gamma, beta, depth, grf_x, grf_z, velocity_x, velocity_z, theta_dt, torque
+
+    def normalizeData(self, depth, velocity_x, velocity_z, grf_x, grf_z, torque):
+        
+        norm_depth = (depth - self.avg_depth)/(0.08 * self.std_dev_depth)
+        norm_vel_x = (velocity_x - self.avg_vel_x)/(0.08 * self.std_dev_vel_x)
+        norm_vel_z = (velocity_z - self.avg_vel_z)/(0.08 * self.std_dev_vel_z)
+
+        norm_grf_x = (grf_x - self.avg_grf_x)/self.std_dev_grf_x
+        norm_grf_z = (grf_z - self.avg_grf_z)/self.std_dev_grf_z
+        norm_torque = (torque - self.avg_torque)/self.std_dev_torque
+
+        return norm_depth, norm_vel_x, norm_vel_z, norm_grf_x, norm_grf_z, norm_torque
+
+
+    """ Read in the data from the csv file
+        Compute the data's means and std_devs """
+    def compute_meta_stats(self, dataFilePath):
+        
+        all_grf_x = []
+        all_grf_z = []
+        all_depth = []
+        all_velocity_x = []
+        all_velocity_z = []
+        all_torque = []    
+        dataFile = open(dataFilePath, "r")
+
+        for dataItem in zip(dataFile):
+            x = dataItem[0].split(",")
+
+            grf_x = float(x[16])
+            grf_z = float(x[18])
+            velocity_x = float(x[7])/100.0 # Convert to meters
+            velocity_z = float(x[9])/100.0
+            torque_y = float(x[14])
+            depth = float(x[3])/100.0
+
+            all_grf_x.append(grf_x)
+            all_grf_z.append(grf_z)
+            all_depth.append(depth)
+            all_velocity_x.append(velocity_x)
+            all_velocity_z.append(velocity_z)
+            all_torque.append(torque_y)
+
+        self.std_dev_grf_x = statistics.pstdev(all_grf_x)
+        self.std_dev_grf_z = statistics.pstdev(all_grf_z)
+        self.std_dev_depth = statistics.pstdev(all_depth)
+        self.std_dev_vel_x = statistics.pstdev(all_velocity_x)
+        self.std_dev_vel_z = statistics.pstdev(all_velocity_z)
+        self.std_dev_torque = statistics.pstdev(all_torque)
+
+        self.avg_grf_x = statistics.mean(all_grf_x)
+        self.avg_grf_z = statistics.mean(all_grf_z)
+        self.avg_depth = statistics.mean(all_depth)
+        self.avg_vel_x = statistics.mean(all_velocity_x)
+        self.avg_vel_z = statistics.mean(all_velocity_z)
+        self.avg_torque = statistics.mean(all_torque)
+        
+        self.min_grf_x = min(all_grf_x)
+        self.min_grf_z = min(all_grf_z)
+        self.min_depth = min(all_depth)
+        self.min_vel_x = min(all_velocity_x)
+        self.min_vel_z = min(all_velocity_z)
+        self.min_torque = min(all_torque)
+        self.max_depth = max(all_depth)
+
+
     def logStats(self):
         print("The dataset was created succesfully")
         numInstances = len(self.allData)
-        print("The dataset has " + f"{numInstances:,}" + " training instances") 
+        print("The dataset has " + f"{numInstances:,}" + " training instances\n") 
+        
+        print("avg_grf_x: " + str(self.avg_grf_x))
+        print("avg_grf_z: " + str(self.avg_grf_z))
+        print("avg_depth: " + str(self.avg_depth))
+        print("avg_vel_x: " + str(self.avg_vel_x))
+        print("avg_vel_z: " + str(self.avg_vel_z))
+        print("avg_torque: " + str(self.avg_torque))
+
+        print("std_dev_grf_x " + str(self.std_dev_grf_x))
+        print("std_dev_grf_z " + str(self.std_dev_grf_z))
+        print("std_dev_depth " + str(self.std_dev_depth))
+        print("std_dev_vel_x " + str(self.std_dev_vel_x))
+        print("std_dev_vel_z " + str(self.std_dev_vel_z))
+        print("std_dev_torque " + str(self.std_dev_torque))
 
 
     """ Tensorflow reformatting. Split the lists of data 

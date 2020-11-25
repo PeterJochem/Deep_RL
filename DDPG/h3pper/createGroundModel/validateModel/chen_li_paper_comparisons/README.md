@@ -40,6 +40,9 @@ Juntao's DEM simulation data <br />
 ![Learned Mapping](media/learnedMapping.png "Learned Mapping") <br />
 Neural Network's learned representation of the DEM dataset <br /> 
 
+![Learned Mapping Across Depth](media/animate_both_models.gif "Learned Mapping Across Depth") <br />
+Neural Network's learned representation as the foot's depth increases <br /> 
+
 # How to Replicate What I Did
 ```python3 createOneDataSet.py``` <br />
 ```python3 processData.py``` <br />
