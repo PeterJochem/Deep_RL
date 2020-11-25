@@ -20,9 +20,8 @@ Matlab has a really useful tool for importing neural networks. [Keras](https://k
 
 
 # How to Build on Top of My Code
-
-# Ground Reaction Models
-I made two independent Matlab classes representing the ground. The first maps [gamma, beta, depth] -> [ground reaction force x, ground reaction force z]. This class uses groundReactionForceModel1.m and model1.h5. The second maps [gamma, beta, depth, velocity_x, velocity_z, theta_dt] -> [ground reaction force x, ground reaction force z, torque about y-axis] and uses groundReactionForceModel2.m and model2.h5. <br />
+# Ground Reaction Models in directory use_ground_models
+I made two independent Matlab classes (located in ```use_ground_models```) representing the ground. The first maps [gamma, beta, depth] -> [ground reaction force x, ground reaction force z]. This class uses groundReactionForceModel1.m and model1.h5. The second maps [gamma, beta, depth, velocity_x, velocity_z, theta_dt] -> [ground reaction force x, ground reaction force z, torque about y-axis] and uses groundReactionForceModel2.m and model2.h5. More details are in the ```use_ground_models``` folder. <br />
 
 ### Input Space Description
 gamma (rads): The angle at which the foot is intruding into the ground. <br /> 
