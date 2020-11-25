@@ -52,6 +52,8 @@ An initial velocity of -50 cm/s <br /> <br />
 # Files in Repo 
 ```eval_foot_gpm.m```: Highest level Matlab code for comparing the DEM data, RFT models, and neural network models of the ground. <br />   
 
+```solveODEs.py```: Python script for numerically solving the equations of motion of the plate using the neural network ground model. <br />
+
 ```groundReactionModel1.m```: Matlab class for a neural network mapping [gamma, beta, depth] -> [ground reaction force x, ground reaction force z, torque] <br />
 
 ```groundReactionModel2.m```: Matlab class for a neural network mapping [gamma, beta, depth, velocity_x, velocity_z] -> [ground reaction force x, ground reaction force z, torque] <br /> 
