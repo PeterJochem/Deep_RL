@@ -23,6 +23,7 @@ Below is a visualization Juntao created of what the simulated environment looks 
 # Files in Repo
 ```processData.py```: This creates a neural network, trains it on the dataset, and displays the learned mapping in a style similiar to the data in the Chen Li paper. <br />
 ```createOneDataSet.py```: This is a utility to take many csv files of the same format and combine them into one csv file. <br />
+```visualize.m```: This visualizes the learned model's mapping as the foot intrudes into the material <br />  
 ```dataset```: This folder has the many csv files Juntao generated to make the dataset. It also has the csv file which is the combination of all the other csv files. I am unable to commit the csv files themselves because of Github's file size limits. So, (here)[https://drive.google.com/file/d/1KkP-1wS5JZlekcDpJVncy3schVZpl43l/view?usp=sharing] is a link to the same data. The link is to a zip file of the folder.
 <br />  
 ```media```: This has pictures useful for describing the setup and the results. <br /> 
@@ -32,19 +33,19 @@ Below is a visualization Juntao created of what the simulated environment looks 
 The first image is from Chen Li's [Terradynamics paper](https://arxiv.org/abs/1303.7065). They ran physical experiments to measure the stress per unit depth of a plate as it is driven into granular material. Juntao replicated the physical experiment in a DEM simulation and gathered the same data. Below is an image of the (filtered) raw data from the Chronos simulations. This data was filtered to only contain data points with a depth in the interval of (X, Y). This data is very similiar to the physical experimental data collected by the Chen Li group.    
 
 ![Chen Li Experimental Data](media/stress_data_original.png "Chen Li Experimental Data") <br />
-Chen Li's experimental data <br />
+Graph1: Chen Li's experimental data <br /> <br />
 
 ![Chrono Simulated Data](media/DEM_raw_data.png "Chrono Simulation Data") <br />
-Juntao's DEM simulation data <br />
+Graph2: Juntao's DEM simulation data <br /> <br />
 
 ![Learned Mapping](media/learnedMapping.png "Learned Mapping") <br />
-Neural Network's learned representation of the DEM dataset <br /> 
+Graph3: Neural Network's learned representation of the DEM dataset <br /> <br />
 
 ![Learned Mapping Across Depth](media/animate_both_models.gif "Learned Mapping Across Depth") <br />
-Neural Network's learned representation as the foot's depth increases <br /> 
+Graph4: Neural Network's learned representation as the foot's depth increases <br /> <br /> 
 
 # How to Replicate What I Did
-```python3 createOneDataSet.py``` <br />
-```python3 processData.py``` <br />
+In order to make a nueral network, train it on the dataset, and create plots (Graph3 above) to compare with the Terradynamics paper plots (Graph1 above), run ```python3 createOneDataSet.py``` and then ```python3 processData.py``` <br />
 
+In order to create the visualization of the ground model as the plate is driven further into the material, you need to first run the steps above to create a neural network and train it on the dataset. This will create a model.h5 file. This is a file format describing the networks architecture and weights. You then need to open ```groundReactionModel.m``` in Matlab and insert the new path to the model.h5 file. To generate the visualization, you then run in Matlab, ```visualize.m```     
 

@@ -9,7 +9,7 @@ I created a dataset to train the neural network on. The DEM simulations drive th
 
 # How to Recreate My Graphs
 ## Train the Models
-Running ```python3 processData.py``` will read in the dataset, create a neural network, and learn from it. The neural network is saved as ```model.h5```. To use the neural network, open the groundReaction.m file and put in the new path to the model.h5 file.     
+Running ```python3 processData.py``` will read in the dataset, create a neural network, and learn from it. The neural network is saved as ```model.h5```. To use the neural network, open the groundReaction.m file and put in the new path to the model.h5 file.      
 
 ## Compare the Models
 In Matlab, run <br /> 
