@@ -7,14 +7,14 @@ Deep learning for control in simulated environments is an exciting area of resea
 
 # Results 
 The PMTG author's describe a toy problem for illustrating their approach. Suppose we have perfect position control over a ball moving on a plane and we had some sort of deformed figure-eight path we wanted the ball to follow over time. Since we know the optimal path for the ball is roughly a figure eight shape, we could create a trajectory generator that leads to a figure eight shape. This figure eight shape would have parameters controlling the width and height of the loops. At each time step, the trajectory generator outputs an (x, y) position for the ball. The RL agent can modulate this (x, y) control signal and also set the internal parameters of the trajectory generator. A control diagram for the system is below. <br />
-![](media/controlDiagram.png) <br />
+![](../media/controlDiagram.png) <br />
 
 The author's optimal path and trajectory generators are shown below <br />
-![](media/optimalPath_and_TGs.png) <br />
+![](../media/optimalPath_and_TGs.png) <br />
 
 I created a similiar environment and used a PMTG architecture with DDPG to learn a path through the environment. The blue, warped figure eight is the optimal path and the orange path is the learned path. 
 Reward Per Epoch over Time |  Learned Policy
 :-------------------------:|:-------------------------:
-![](media/loss.png)  | ![](media/learnedPath.png)
+![](../media/loss.png)  | ![](../media/learnedPath.png)
 
 
