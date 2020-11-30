@@ -245,7 +245,7 @@ class HoppingRobotEnv(gym.Env):
         customGRF = False
         if (foot_z < self.granularDepth and foot_z > 0.0001):
             customGRF = True
-            
+
         grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)
           
         # Step forward some finite number of seconds or milliseconds
