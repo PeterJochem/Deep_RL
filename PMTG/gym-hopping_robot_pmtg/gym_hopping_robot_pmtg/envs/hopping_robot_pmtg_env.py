@@ -82,7 +82,8 @@ class HoppingRobot_PmtgEnv(gym.Env):
                 #p.resetJointState(self.hopper, j, self.homePositionAngles[activeJoint])
                 activeJoint = activeJoint + 1
 
-    
+        self.setInitialConditions()
+         
         p.setRealTimeSimulation(0) # Must do this to apply forces/torques with PyBullet method
         #self.plotGranular()
         self.stateId = p.saveState() # Stores state in memory rather than on disk
@@ -109,7 +110,21 @@ class HoppingRobot_PmtgEnv(gym.Env):
                 self.paramIds.append(p.addUserDebugParameter(jointName.decode("utf-8"), -4, 4, self.homePositionAngles[activeJoint]))
                 p.resetJointState(self.hopper, j, self.homePositionAngles[activeJoint])
                 activeJoint = activeJoint + 1
-     
+        
+    """ """
+    def setInitialConditions(self):
+        x_b, dx_b, y_b, dy_b, theta_b, dtheta_b, x_f, dx_f, y_f, dy_f, theta_f, dtheta_f = self.initial_conditions
+        
+        # Set the bodys position and velocity
+        orientation_body = p.getQuaternionFromEuler([theta_b, 0.0, 0.0]) 
+        p.resetBasePositionAndOrientation(self.hopper, [0.0, 0.0, 1.15], orientation_body)
+        p.resetBaseVelocity(self.hopper, [0.0, dx_b, 0.0], [-dtheta_b, 0.0, 0.0])
+        
+        # Set the foots position and velocity
+        foot_index = 3
+        p.resetJointState(self.hopper, foot_index, theta_f, dtheta_f)
+        
+
     """Update robot's PID controller's control signals. controlSignal is a list of desired joint angles (rads).
     PyBullet does support direct torque control...iterate in this direction eventually?"""
     def controller(self, controlSignal):
