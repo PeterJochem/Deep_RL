@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import keras
 import numpy as np
 import modern_robotics as mr
+import math
 from scipy.spatial.transform import Rotation as R
 import sys
 sys.path.append("/home/peterjochem/Desktop/Deep_RL/PMTG/h3pper/wrench_generator")
@@ -37,7 +38,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
         p.setGravity(0, 0, -10)
 
         self.plane = p.loadURDF("plane.urdf")
-        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.4], useFixedBase = False)
+        self.hopper = p.loadURDF(absolute_path_urdf, [0.0, 0.0, 1.27], useFixedBase = False)
         
         self.gravId = p.addUserDebugParameter("gravity", -10, 10, -10)
         self.homePositionAngles = [0.0, 0.0, 0.0]
@@ -83,7 +84,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
 
     
         p.setRealTimeSimulation(0) # Must do this to apply forces/torques with PyBullet method
-        self.plotGranular()
+        #self.plotGranular()
         self.stateId = p.saveState() # Stores state in memory rather than on disk
     
 
@@ -234,7 +235,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
         # Shoud really compute after every p.stepSimulation
         ankle_position, ankle_angular_velocity, appliedTorque, foot_x, foot_y, foot_z, foot_dx, foot_dy, foot_dz, foot_roll, foot_pitch, foot_yaw = self.getFootState()           
         #depth = plate_bottom_z - bed_z
-        gamma = np.sqrt(foot_dy**2 + foot_dz**2) 
+        gamma = math.atan2(foot_dz, foot_dy) 
         beta = foot_roll
         
         # action = 30 delta terms + 30 residual terms 
@@ -260,8 +261,9 @@ class HoppingRobot_PmtgEnv(gym.Env):
         j3_pos, ankle_angular_velocity, ankle_joint_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [3])[0]
         thetaList = np.array([j3_pos, j2_pos, j1_pos])
         
-        joint_torques = self.wrenchToTorque(thetaList, [chosen_u_theta, 0.0, 0.0, 0.0, chosen_u_y, chosen_u_z])
-        joint_torques = joint_torques + action[0][:3] 
+                        #-1
+        joint_torques = -1 * self.wrenchToTorque(thetaList, [chosen_u_theta, 0.0, 0.0, 0.0, chosen_u_y, chosen_u_z])
+        joint_torques = joint_torques # + action[0][:3] 
 
         if (self.visualizeTrajectory):
             self.plotPosition()
