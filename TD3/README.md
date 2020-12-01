@@ -18,4 +18,5 @@ TD3 adds noise to the target actions in order to smooth out the Q-functions acro
 ![](media/TD3_Pseudocode.png)
 
 # Results 
-Wow! The agent does learn much faster than the DDPG agent. I should add an ablation comparison between the two algorithms
+The agent does learn faster than the DDPG agent! Below is a gif of the learned policy. <br />
+![](../DDPG/media/h3pper_DDPG2.gif)
