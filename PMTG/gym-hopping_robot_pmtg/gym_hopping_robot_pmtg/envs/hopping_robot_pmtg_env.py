@@ -111,13 +111,13 @@ class HoppingRobot_PmtgEnv(gym.Env):
                 p.resetJointState(self.hopper, j, self.homePositionAngles[activeJoint])
                 activeJoint = activeJoint + 1
         
-    """ """
+    """ Setup the robot in PyBullet to be at the indicated initial conditions """
     def setInitialConditions(self):
         x_b, dx_b, y_b, dy_b, theta_b, dtheta_b, x_f, dx_f, y_f, dy_f, theta_f, dtheta_f = self.initial_conditions
         
         # Set the bodys position and velocity
         orientation_body = p.getQuaternionFromEuler([theta_b, 0.0, 0.0]) 
-        p.resetBasePositionAndOrientation(self.hopper, [0.0, 0.0, 1.15], orientation_body)
+        p.resetBasePositionAndOrientation(self.hopper, [0.0, 0.0, 1.22], orientation_body)
         p.resetBaseVelocity(self.hopper, [0.0, dx_b, 0.0], [-dtheta_b, 0.0, 0.0])
         
         # Set the foots position and velocity
@@ -157,9 +157,6 @@ class HoppingRobot_PmtgEnv(gym.Env):
     def computeGRF(self, gamma, beta, depth, dx, dy, dz, ankle_angular_velocity):
         
         inVector = [gamma, beta, depth, dy, dz, ankle_angular_velocity]
-        
-        # Be careful with how you define the frames
-        #print(inVector)
         grf_y, grf_z, torque = (self.neural_net.predict([inVector]))[0]
         
         return grf_y, grf_z, torque
@@ -178,7 +175,6 @@ class HoppingRobot_PmtgEnv(gym.Env):
         p.resetBasePositionAndOrientation(self.hopper, [0.0, y, z], robot_orientation)
         p.resetBaseVelocity(self.hopper, [0.0, dy, dz], [wx, 0.0, 0.0])
     
-
     """ Convert a point from the hip frame to the world frame """
     def hip_to_world(self, Point_in_hip_frame):
         
@@ -207,13 +203,13 @@ class HoppingRobot_PmtgEnv(gym.Env):
         P_world = np.matmul(T_world_hip, P_hip)  
 
         return P_world
-
+    
+    """ Plot the current position of the robots foot in PyBullet """
     def plotPosition(self):
         world_pos, orientation, localInertialFramePosition, localInertialFrameOrientation, worldLinkFramePosition, worldLinkFrameOrientation, worldLinkLinearVelocity, worldLinkAngularVelocity = p.getLinkState(self.hopper, 0, 1)
         body_x, body_y, body_z = world_pos
         self.foot_points.append(p.addUserDebugLine([foot_x - 0.025, foot_y - 0.025, foot_z - 0.025], [foot_x, foot_y, foot_z], [1, 0, 0]))
         self.body_points.append(p.addUserDebugLine([body_x - 0.025, body_y - 0.025, body_z + 0.2], [body_x, body_y, body_z + 0.2 + 0.025], [0, 0, 1]))
-    
     
     def createBodyScrews(self):
 
@@ -232,18 +228,21 @@ class HoppingRobot_PmtgEnv(gym.Env):
             
         return np.array([mr.ScrewToAxis(q1, s1, 0.0), mr.ScrewToAxis(q2, s2, 0.0), mr.ScrewToAxis(q3, s3, 0.0)]) 
     
-    """[ankle angle, knee angle, hip angle] """
+    """ Construct the Jacobian 
+    The order must be [ankle angle, knee angle, hip angle] """
     def Jacobian(self, thetaList):
          
         body_screws = self.createBodyScrews()
         return mr.JacobianBody(body_screws.transpose(), thetaList)
          
-    """ thetaList should be in the order [ankle angle, knee angle, hip angle] """
+    """ Map the wrench to a torque - details are in Modern robotics 
+    thetaList should be in the order [ankle angle, knee angle, hip angle] """
     def wrenchToTorque(self, thetaList, wrench):
         
         # Torque = Jacobian(thetaList).T * Wrench
         return np.matmul(np.transpose(self.Jacobian(thetaList)), wrench)
          
+    """ Move time forward a small increment """
     def step(self, action):
            
         # Forward prop neural network to get GRF, use that to change the gravity
@@ -285,7 +284,8 @@ class HoppingRobot_PmtgEnv(gym.Env):
 
         customGRF = False
         if (foot_z < 0.3 and foot_z > 0.0001):
-            customGRF = True
+            # customGRF = True
+            pass
 
         grf_y, grf_z, torque = self.computeGRF(gamma, beta, foot_z, foot_dx, foot_dy, foot_dz, ankle_angular_velocity)
           
@@ -306,7 +306,8 @@ class HoppingRobot_PmtgEnv(gym.Env):
         self.time = self.time + (3) * (1.0/240.0)
         isOver = self.checkForEnd()
         return self.computeObservation(), self.computeReward(isOver), isOver, None
-        
+       
+    """ Plot visualization of the bed of granular material """
     def plotGranular(self):
         x_value = -1.0
         y_min = -1.0
@@ -352,7 +353,7 @@ class HoppingRobot_PmtgEnv(gym.Env):
                 p.setCollisionFilterPair(self.plane, nextSphere, -1, -1, enableCollision)
 
 
-
+    """ Gather data about the foot from PyBullet """
     def getFootState(self):
         
         """Server keeps two lists. One of links and one of joints. These are the indexes into those lists"""
@@ -360,7 +361,6 @@ class HoppingRobot_PmtgEnv(gym.Env):
         foot_link_index = 3
 
         ankle_position, ankle_angular_velocity, ankle_joint_reaction_forces, appliedTorque = p.getJointStates(self.hopper, [ankle_joint_index])[0]
-             
          
         world_pos, orientation, localInertialFramePosition, localInertialFrameOrientation, worldLinkFramePosition, worldLinkFrameOrientation, worldLinkLinearVelocity, worldLinkAngularVelocity = p.getLinkState(self.hopper, foot_link_index, 1)
         

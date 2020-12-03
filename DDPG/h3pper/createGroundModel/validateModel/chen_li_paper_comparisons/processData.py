@@ -160,8 +160,9 @@ class NeuralNetwork:
 
     """Train the neural network on the dataset. 
        epochs: the number of passes over the entire dataset to make """ 
-    def train_keras(self, epochs=self.epochs):
-        
+    def train_keras(self, epochs):
+            
+        epochs_default = 200
         #sess_batch_size = len(self.train_inputVectors) # Use this for gradient descent 
         sess_batch_size = 32 # Use this for stochastic gradient descent
 
