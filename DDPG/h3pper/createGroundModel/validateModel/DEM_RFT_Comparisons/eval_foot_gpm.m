@@ -200,7 +200,7 @@ legend('$F_x$','$F_y$','Location','Best');
 ylabel('$F_x,F_y$ [N]')
 xlabel('$t$ [s]')
 
-Fx
+% Fx
 
 % 1c-iii) plot ground reaction moments vs time:
 subplot(3,3,9)
@@ -274,7 +274,13 @@ ode_opts = odeset('Events',@(t,state) stopEvents(t,state,params));
 % pre-allocate a bunch of stuff
 ulist = zeros(numel(tsim),numel(params.init_wrench));
 grf_list = zeros(numel(tsim),5);
-grf_neural_net = zeros(numel(tsim),3);
+
+
+grf_neural_net = ones(numel(tsim), 3) * 10.0;
+
+
+all_depths = zeros(numel(tsim),1);
+all_vel_z = zeros(numel(tsim),1);
 grf_grad_list = zeros(numel(tsim),3,6);
 gran_top = pz(1);
 
@@ -290,10 +296,12 @@ for i = 1:numel(tsim)
                     grf_tmp.M_z];
 end
 
-ground_model = groundReactionModel1();
+M = zeros(numel(tsim), 5);
+ground_model = groundReactionModel2();
 %ground_model = groundReactionModel2();
 % Use the RFT trajectory to record the GRF from neural net
 %for i = 1:size(foot_state_original, 1)
+length = 80;
 for i = 1:numel(tsim)
     zero_wrench = [0.0, 0.0, 0.0]; % params.init_wrench;
     
@@ -305,24 +313,41 @@ for i = 1:numel(tsim)
     
     % gamma = -atan2(vel_z, vel_x); % + 3.14/2.0; %* (360.0/3.14); %* 10.0;
     % gamma = mod(atan2(vel_z, -vel_x) + 3.14/2.0, 3.14/2.0);
-    gamma = abs(atan2(vel_z, vel_x)) - 3.14/2.0;
-    depth = (-gran_top + (foot_state_original(i, 3)));
+    %gamma = abs(atan2(vel_z, vel_x)) - 3.14/2.0;
+    gamma = atan2(vel_z, vel_x) + 3.14/2.0;
+    % depth = (-gran_top + (foot_state_original(i, 3)));
     depth = -(foot_state_original(i, 3)); %  * 1000.0;
-   
+    depth = depth; %  - 0.02;
+    
+    all_depths(i, 1) = depth;
+    all_vel_z(i, 1) = vel_z;
+    M(i,1) = gamma;
+    M(i,2) = beta;
+    M(i,3) = depth;
+    M(i,4) = vel_x;
+    M(i, 5) = vel_z;
+    
     %[grf_x, grf_z, torque] = ground_model.computeGRF(gamma, beta, depth, vel_x, -vel_z, theta_dt);
     [grf_x, grf_z, torque] = ground_model.computeGRF(gamma, beta, depth, vel_x, vel_z, theta_dt);
-    grf_neural_net(i,1) = min(8.0, grf_x); %/100.0;
-    grf_neural_net(i,2) = max(-15.0, grf_z); % /100.0;
+    %if (grf_z < 2.5)
+    %    grf_z = 2.5
+    grf_neural_net(i,1) = min(8.0, grf_x); %/ 100.0;
+    grf_neural_net(i,2) = max(-15.0, grf_z); % / 100.0;
     grf_neural_net(i,3) = torque;
 
 end
 
+csvwrite('/home/peterjochem/Desktop/trajectory.csv', M)
+
+
+foot_state_original(:, 4);
+all_depths;
 % -6.0 * foot_state_original(:, 3)
 %foot_state_original(i, 3)
 %ground_model.computeGRF(0.0, 2.0, 0.01)
 %grf_neural_net
-foot_state_original(:,3)
-atan2(foot_state_original(:,4), foot_state_original(:,2))
+foot_state_original(:,3);
+atan2(foot_state_original(:,4), foot_state_original(:,2));
 
 %% Plot RFT stuff
 % figure;
@@ -432,7 +457,10 @@ ylabel('$\dot{\theta}$ [rad]')
 subplot(3,3,7)
 plot(tsim,grf_list(:,3),'-','LineWidth',2);hold on;
 plot(tsim, 1 * grf_neural_net(:,2),'-','LineWidth',2);hold on;
-plot(t(1:numel(tsim)),Fz(1:numel(tsim)),':','LineWidth',2); hold off
+%plot(y1, 1 * grf_neural_net(:,2),'-','LineWidth',2);hold on;
+
+
+plot(t(1:numel(tsim)),Fz(1:numel(tsim)),':','LineWidth',2); hold on;
 legend('RFT', 'Learned Model','Chrono','Location','Best');
 ylabel('$F_z$ [N]')
 
@@ -452,6 +480,18 @@ plot(tsim, 1 * grf_neural_net(:,3),'-','LineWidth',2);hold on;
 plot(t(1:numel(tsim)),My(1:numel(tsim)),':','LineWidth',2); hold off
 legend('RFT', 'Learned Model' ,'DEM','Location','Best');
 ylabel('$M_y$ [N$\cdot$m]')
+
+% Plot the Plate's State Variables
+subplot(3,3,6)
+plot(t(1:numel(tsim)), all_depths(1:numel(tsim)),':','LineWidth',2); hold off;
+legend('DEM','Location','Best');
+ylabel('depth (m)')
+
+subplot(3,3,5)
+plot(t(1:numel(tsim)), all_vel_z(1:numel(tsim)),':','LineWidth',2); hold off;
+legend('DEM','Location','Best');
+ylabel('velocity-z (m)')
+
 
 fname=strcat(path_to_csvs,'/RFT_and_DEM_v=',num2str(impact_speed_MKS,3),'.fig');
 saveas(figure(2),fname);

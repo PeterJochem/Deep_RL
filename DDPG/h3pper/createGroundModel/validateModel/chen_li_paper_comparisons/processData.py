@@ -27,10 +27,9 @@ class dataSet:
 
         for dataItem in zip(dataFile):
              
-            x = dataItem[0].split(",") # [Gamma (degrees), beta (degrees), depth, X-stress (N/cm^2), Z-stress (N/cm^2)]            
-            
-            gamma = float(x[0]) # * (2 * np.pi/360.0) 
-            beta = float(x[1])  # * (2 * np.pi/360.0)
+            x = dataItem[0].split(",") # [Gamma (degrees), beta (degrees), depth, X-stress (N/cm^2), Z-stress (N/cm^2)]               
+            gamma = float(x[0]) / 90.0 # * (2 * np.pi/360.0) 
+            beta = float(x[1]) / 90.0  # * (2 * np.pi/360.0)
             depth = float(x[2])
 
             stress_x = float(x[3])
@@ -100,7 +99,7 @@ class NeuralNetwork:
         
         # Hyper parameters 
         self.epochs = 100 # Default value
-        self.learning_rate = 0.001
+        self.learning_rate = 0.01
         self.batchSize = 32
         
     def defineGraph_keras(self):
@@ -119,9 +118,19 @@ class NeuralNetwork:
             keras.layers.Dense(self.outputShape),
         ])
 
+        #self.network = keras.Sequential([
+        #    keras.layers.Dense(20, input_dim = 2),
+        #    keras.layers.Activation(keras.activations.relu),
+        #    keras.layers.Dense(28),
+        #    keras.layers.Activation(keras.activations.relu),
+        #    keras.layers.Dense(14),
+        #    keras.layers.Activation(keras.activations.relu),
+        #    keras.layers.Dense(2)
+        #])
+
         # Set more of the model's parameters
         self.optimizer = keras.optimizers.Adam(learning_rate = self.learning_rate)
-        self.network.compile(loss='mae', optimizer = self.optimizer, metrics=['mse']) # use mae
+        self.network.compile(loss='mse', optimizer = self.optimizer, metrics=['mse']) # use mae
 
     
     def createPlots(self, F_Z, F_X, useDefaultMap = False, customLimits = False):
@@ -163,8 +172,8 @@ class NeuralNetwork:
     def train_keras(self, epochs):
             
         epochs_default = 200
-        #sess_batch_size = len(self.train_inputVectors) # Use this for gradient descent 
-        sess_batch_size = 32 # Use this for stochastic gradient descent
+        sess_batch_size = len(self.train_inputVectors) # Use this for gradient descent 
+        #sess_batch_size = 32 # Use this for stochastic gradient descent
 
         self.network.fit([self.train_inputVectors], [self.train_labels], batch_size = sess_batch_size, epochs = epochs)
         self.network.save('model.h5')
@@ -184,8 +193,8 @@ class NeuralNetwork:
         for i in range(angle_resolution):
             for j in range(angle_resolution):
 
-                gamma = -1 * (180.0 / 2.0) + (j * angle_increment)
-                beta = (180.0 / 2.0) - (i * angle_increment)
+                gamma = (-1 * (180.0 / 2.0) + (j * angle_increment)) / 90.0            
+                beta = ((180.0 / 2.0) - (i * angle_increment)) / 90.0                
 
                 prediction = self.network.predict([[gamma, beta]])
 
@@ -202,7 +211,7 @@ def main():
     
     myNetwork = NeuralNetwork(myDataSet)
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(100)
+    myNetwork.train_keras(300)
     myNetwork.visualizeMapping()
 
 if __name__ == "__main__":

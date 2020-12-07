@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-import tensorflow as tf
+#import tensorflow as tf
 import numpy as np
 import statistics
 import warnings
@@ -33,11 +33,12 @@ class dataSet:
             norm_depth, norm_vel_x, norm_vel_z, norm_grf_x, norm_grf_z, norm_torque = self.normalizeData(depth, velocity_x, velocity_z, grf_x, grf_z, torque)
              
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
+            #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque])
             newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque])
             
             #if (depth < 0.011 and depth > -0.011):
-            #if (abs(grf_z) > 0.01):
-            if (True):
+            if (abs(grf_z) > 1.0):
+                #if (True):
                 self.allData.append(newTrainInstance)
          
         self.logStats()
@@ -191,16 +192,20 @@ class NeuralNetwork:
         self.network = keras.Sequential([
             keras.layers.Dense(200, input_dim = self.inputShape),
             keras.layers.Activation(keras.activations.relu),
-            keras.layers.Dense(120),
+            keras.layers.Dense(150),
             keras.layers.Activation(keras.activations.relu),
-            keras.layers.Dense(60),
+            keras.layers.Dense(80),
             keras.layers.Activation(keras.activations.relu),
-            keras.layers.Dense(110),
-            keras.layers.Activation(keras.activations.relu),
-            #keras.layers.Dense(75),
+            #keras.layers.Dense(120),
             #keras.layers.Activation(keras.activations.relu),
-            #keras.layers.Dense(50),
+            #keras.layers.Dense(100),
             #keras.layers.Activation(keras.activations.relu),
+            #keras.layers.Dense(100),
+            #keras.layers.Activation(keras.activations.relu),            
+            #keras.layers.Dense(80),
+            #keras.layers.Activation(keras.activations.relu),
+            keras.layers.Dense(50),
+            keras.layers.Activation(keras.activations.relu),
             keras.layers.Dense(20),
             keras.layers.Activation(keras.activations.relu),
             keras.layers.Dense(self.outputShape)
@@ -254,11 +259,11 @@ class NeuralNetwork:
 
     def train_keras(self, epochs=100):
         
-        sess_batch_size = len(self.train_inputVectors) # Use this for gradient descent 
-        # sess_batch_size = 32 # Use this for stochastic gradient descent
+        #sess_batch_size = len(self.train_inputVectors) # Use this for gradient descent 
+        sess_batch_size = 32 # Use this for stochastic gradient descent
 
         self.network.fit([self.train_inputVectors], [self.train_labels], batch_size = sess_batch_size, epochs = epochs)
-        self.network.save('model.h5')
+        self.network.save('model6.h5')
 
 def main():
    
