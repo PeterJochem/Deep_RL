@@ -281,6 +281,9 @@ grf_neural_net = ones(numel(tsim), 3) * 10.0;
 
 all_depths = zeros(numel(tsim),1);
 all_vel_z = zeros(numel(tsim),1);
+all_gamma = zeros(numel(tsim),1);
+all_beta = zeros(numel(tsim),1);
+
 grf_grad_list = zeros(numel(tsim),3,6);
 gran_top = pz(1);
 
@@ -297,10 +300,8 @@ for i = 1:numel(tsim)
 end
 
 M = zeros(numel(tsim), 5);
+%ground_model = groundReactionModel1();
 ground_model = groundReactionModel2();
-%ground_model = groundReactionModel2();
-% Use the RFT trajectory to record the GRF from neural net
-%for i = 1:size(foot_state_original, 1)
 length = 80;
 for i = 1:numel(tsim)
     zero_wrench = [0.0, 0.0, 0.0]; % params.init_wrench;
@@ -311,16 +312,14 @@ for i = 1:numel(tsim)
     vel_z = foot_state_original(i, 4);
     theta_dt = -foot_state_original(i, 6);
     
-    % gamma = -atan2(vel_z, vel_x); % + 3.14/2.0; %* (360.0/3.14); %* 10.0;
-    % gamma = mod(atan2(vel_z, -vel_x) + 3.14/2.0, 3.14/2.0);
-    %gamma = abs(atan2(vel_z, vel_x)) - 3.14/2.0;
     gamma = atan2(vel_z, vel_x) + 3.14/2.0;
-    % depth = (-gran_top + (foot_state_original(i, 3)));
     depth = -(foot_state_original(i, 3)); %  * 1000.0;
-    depth = depth; %  - 0.02;
     
     all_depths(i, 1) = depth;
     all_vel_z(i, 1) = vel_z;
+    all_gamma(i, 1) = gamma;
+    all_beta(i, 1) = beta;
+    
     M(i,1) = gamma;
     M(i,2) = beta;
     M(i,3) = depth;
@@ -329,25 +328,14 @@ for i = 1:numel(tsim)
     
     %[grf_x, grf_z, torque] = ground_model.computeGRF(gamma, beta, depth, vel_x, -vel_z, theta_dt);
     [grf_x, grf_z, torque] = ground_model.computeGRF(gamma, beta, depth, vel_x, vel_z, theta_dt);
-    %if (grf_z < 2.5)
-    %    grf_z = 2.5
+    
     grf_neural_net(i,1) = min(8.0, grf_x); %/ 100.0;
     grf_neural_net(i,2) = max(-15.0, grf_z); % / 100.0;
     grf_neural_net(i,3) = torque;
 
 end
 
-csvwrite('/home/peterjochem/Desktop/trajectory.csv', M)
-
-
-foot_state_original(:, 4);
-all_depths;
-% -6.0 * foot_state_original(:, 3)
-%foot_state_original(i, 3)
-%ground_model.computeGRF(0.0, 2.0, 0.01)
-%grf_neural_net
-foot_state_original(:,3);
-atan2(foot_state_original(:,4), foot_state_original(:,2));
+csvwrite('/home/peterjochem/Desktop/trajectory.csv', M);
 
 %% Plot RFT stuff
 % figure;
@@ -491,6 +479,16 @@ subplot(3,3,5)
 plot(t(1:numel(tsim)), all_vel_z(1:numel(tsim)),':','LineWidth',2); hold off;
 legend('DEM','Location','Best');
 ylabel('velocity-z (m)')
+
+subplot(3,3,4)
+plot(t(1:numel(tsim)), all_gamma(1:numel(tsim)),':','LineWidth',2); hold off;
+legend('DEM','Location','Best');
+ylabel('gamma (rads)')
+
+subplot(3,3,3)
+plot(t(1:numel(tsim)), all_beta(1:numel(tsim)),':','LineWidth',2); hold off;
+legend('DEM','Location','Best');
+ylabel('beta (rads)')
 
 
 fname=strcat(path_to_csvs,'/RFT_and_DEM_v=',num2str(impact_speed_MKS,3),'.fig');

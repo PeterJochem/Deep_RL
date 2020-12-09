@@ -34,11 +34,15 @@ class dataSet:
 
             stress_x = float(x[3])
             stress_z = float(x[4])
-
+        
+            grf_x = stress_x * 25.0
+            grf_z = stress_z * 25.0
+            torque_y = 0
+            
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
-            #newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z, torque_y]) 
-            newTrainInstance = trainInstance([gamma, beta], [stress_x/depth, stress_z/depth])
-            #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_z])
+            newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z, torque_y]) 
+            #newTrainInstance = trainInstance([gamma, beta], [stress_x/depth, stress_z/depth])
+            
 
             #if (abs(grf_z) > 0.0001):
             #if (depth > 0.000001):

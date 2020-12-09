@@ -37,7 +37,7 @@ class dataSet:
             newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque])
             
             #if (depth < 0.011 and depth > -0.011):
-            if (abs(grf_z) > 1.0):
+            if (abs(grf_z) > 0.5):
                 #if (True):
                 self.allData.append(newTrainInstance)
          
@@ -46,8 +46,10 @@ class dataSet:
     def parseLine(self, nextLine):
             
         # Convert everything to SI units
-        gamma = float(nextLine[1])  # The angles are in radians
-        beta = float(nextLine[2])
+        # Normalize the angles
+        gamma = float(nextLine[1]) #/ 3.14  # The angles are in radians
+        beta = float(nextLine[2]) #/ 3.14
+
         depth = float(nextLine[3]) / 100.0
 
         grf_x = float(nextLine[16])
@@ -186,14 +188,14 @@ class NeuralNetwork:
         self.learningRate = 0.001
 
     def defineGraph_keras(self):
-            
-        self.useKeras = True 
-        
+           
         self.network = keras.Sequential([
             keras.layers.Dense(200, input_dim = self.inputShape),
-            keras.layers.Activation(keras.activations.relu),
+            #keras.layers.Activation(keras.activations.relu),
+            keras.layers.LeakyReLU(alpha=0.3),
             keras.layers.Dense(150),
-            keras.layers.Activation(keras.activations.relu),
+            #keras.layers.Activation(keras.activations.relu),
+            keras.layers.LeakyReLU(alpha=0.3),
             keras.layers.Dense(80),
             keras.layers.Activation(keras.activations.relu),
             #keras.layers.Dense(120),
@@ -210,7 +212,17 @@ class NeuralNetwork:
             keras.layers.Activation(keras.activations.relu),
             keras.layers.Dense(self.outputShape)
         ])
-           
+        
+        #self.network = keras.Sequential([
+        #    keras.layers.Dense(20, input_dim = self.inputShape),
+        #    keras.layers.Activation(keras.activations.relu),
+        #    keras.layers.Dense(28),
+        #    keras.layers.Activation(keras.activations.relu),
+        #    keras.layers.Dense(14),
+        #    keras.layers.Activation(keras.activations.relu),
+        #    keras.layers.Dense(self.outputShape)
+        #]) 
+
         # Set more of the model's parameters
         self.optimizer = keras.optimizers.Adam(learning_rate = self.learningRate)
         self.network.compile(loss='mse', optimizer = self.optimizer, metrics=['mae']) 
@@ -259,8 +271,8 @@ class NeuralNetwork:
 
     def train_keras(self, epochs=100):
         
-        #sess_batch_size = len(self.train_inputVectors) # Use this for gradient descent 
-        sess_batch_size = 32 # Use this for stochastic gradient descent
+        sess_batch_size = len(self.train_inputVectors) # Use this for gradient descent 
+        #sess_batch_size = 32 # Use this for stochastic gradient descent
 
         self.network.fit([self.train_inputVectors], [self.train_labels], batch_size = sess_batch_size, epochs = epochs)
         self.network.save('model6.h5')
@@ -269,11 +281,12 @@ def main():
    
     # Create a datset object with all our data
     dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset3/compiledSet.csv"   
-      
+    #dataFile = "/home/peterjochem/Desktop/Deep_RL/DDPG/h3pper/createGroundModel/datasets/dset4/compiledSet.csv"
+
     myDataSet = dataSet(dataFile)
     myNetwork = NeuralNetwork(myDataSet)
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(100)
+    myNetwork.train_keras(400)
 
 if __name__ == "__main__":
     main()
