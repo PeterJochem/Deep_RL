@@ -33,12 +33,12 @@ class dataSet:
             norm_depth, norm_vel_x, norm_vel_z, norm_grf_x, norm_grf_z, norm_torque = self.normalizeData(depth, velocity_x, velocity_z, grf_x, grf_z, torque)
              
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z, theta_dt], [grf_x, grf_z, torque_y])
+            newTrainInstance = trainInstance([gamma, beta, depth], [grf_x, grf_z, torque])
             #newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque])
-            newTrainInstance = trainInstance([gamma, beta, depth, velocity_x, velocity_z], [grf_x, grf_z, torque])
             
             #if (depth < 0.011 and depth > -0.011):
-            if (abs(grf_z) > 0.5):
-                #if (True):
+            #if (abs(grf_z) > 0.5):
+            if (True):
                 self.allData.append(newTrainInstance)
          
         self.logStats()
@@ -286,7 +286,7 @@ def main():
     myDataSet = dataSet(dataFile)
     myNetwork = NeuralNetwork(myDataSet)
     myNetwork.defineGraph_keras()
-    myNetwork.train_keras(400)
+    myNetwork.train_keras(100)
 
 if __name__ == "__main__":
     main()

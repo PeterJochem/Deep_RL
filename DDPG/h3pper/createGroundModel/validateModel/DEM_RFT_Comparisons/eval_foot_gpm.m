@@ -308,14 +308,14 @@ length = 80;
 for i = 1:numel(tsim)
     zero_wrench = [0.0, 0.0, 0.0]; % params.init_wrench;
     
-    beta = foot_state_original(i, 5); % * (360.0/3.14) ; % * 10.0; 
+    beta = foot_state_original(i, 5);  
     
     vel_x = foot_state_original(i, 2);
     vel_z = foot_state_original(i, 4);
     theta_dt = -foot_state_original(i, 6);
     
     gamma = atan2(vel_z, vel_x) + 3.14/2.0;
-    depth = -(foot_state_original(i, 3)); %  * 1000.0;
+    depth = -(foot_state_original(i, 3)); 
     
     all_depths(i, 1) = depth;
     all_vel_z(i, 1) = vel_z;
