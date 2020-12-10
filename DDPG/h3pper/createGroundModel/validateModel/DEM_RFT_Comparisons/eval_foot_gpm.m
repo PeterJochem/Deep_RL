@@ -281,8 +281,10 @@ grf_neural_net = ones(numel(tsim), 3) * 10.0;
 
 all_depths = zeros(numel(tsim),1);
 all_vel_z = zeros(numel(tsim),1);
+all_vel_x = zeros(numel(tsim),1);
 all_gamma = zeros(numel(tsim),1);
 all_beta = zeros(numel(tsim),1);
+all_theta_dt = zeros(numel(tsim),1);
 
 grf_grad_list = zeros(numel(tsim),3,6);
 gran_top = pz(1);
@@ -317,8 +319,10 @@ for i = 1:numel(tsim)
     
     all_depths(i, 1) = depth;
     all_vel_z(i, 1) = vel_z;
+    all_vel_x(i, 1) = vel_x;
     all_gamma(i, 1) = gamma;
     all_beta(i, 1) = beta;
+    all_theta_dt(i, 1) = theta_dt;
     
     M(i,1) = gamma;
     M(i,2) = beta;
@@ -470,25 +474,35 @@ legend('RFT', 'Learned Model' ,'DEM','Location','Best');
 ylabel('$M_y$ [N$\cdot$m]')
 
 % Plot the Plate's State Variables
-subplot(3,3,6)
+subplot(3,3,1)
 plot(t(1:numel(tsim)), all_depths(1:numel(tsim)),':','LineWidth',2); hold off;
 legend('DEM','Location','Best');
 ylabel('depth (m)')
 
-subplot(3,3,5)
+subplot(3,3,2)
+plot(t(1:numel(tsim)), all_vel_x(1:numel(tsim)),':','LineWidth',2); hold off;
+legend('DEM','Location','Best');
+ylabel('velocity-x (m/s)')
+
+subplot(3,3,3)
 plot(t(1:numel(tsim)), all_vel_z(1:numel(tsim)),':','LineWidth',2); hold off;
 legend('DEM','Location','Best');
-ylabel('velocity-z (m)')
+ylabel('velocity-z (m/s)')
 
 subplot(3,3,4)
 plot(t(1:numel(tsim)), all_gamma(1:numel(tsim)),':','LineWidth',2); hold off;
 legend('DEM','Location','Best');
 ylabel('gamma (rads)')
 
-subplot(3,3,3)
+subplot(3,3,5)
 plot(t(1:numel(tsim)), all_beta(1:numel(tsim)),':','LineWidth',2); hold off;
 legend('DEM','Location','Best');
 ylabel('beta (rads)')
+
+subplot(3,3,6)
+plot(t(1:numel(tsim)), all_theta_dt(1:numel(tsim)),':','LineWidth',2); hold off;
+legend('DEM','Location','Best');
+ylabel('theta-dt (rads/s)')
 
 
 fname=strcat(path_to_csvs,'/RFT_and_DEM_v=',num2str(impact_speed_MKS,3),'.fig');

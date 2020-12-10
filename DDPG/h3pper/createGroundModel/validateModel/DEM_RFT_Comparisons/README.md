@@ -24,28 +24,28 @@ The neural network is trained on an independent dataset than the trajectories sh
 
 Below are the results of eval_foot_gpm on each trajectory from the DEM data.  
 
-![Initial Velocity = -1 cm/s](media/velocity_minus_1_results.png) <br />
+![Initial Velocity = -1 cm/s](media/vel_1.png) <br />
 An initial velocity of -1 cm/s <br /> <br />
 
-![Initial Velocity = -2 cm/s](media/velocity_minus_2_results.png) <br />
+![Initial Velocity = -2 cm/s](media/vel_2.png) <br />
 An initial velocity of -2 cm/s <br /> <br />
 
-![Initial Velocity = -5 cm/s](media/velocity_minus_5_results.png) <br />
+![Initial Velocity = -5 cm/s](media/vel_5.png) <br />
 An initial velocity of -5 cm/s <br /> <br />
 
-![Initial Velocity = -10 cm/s](media/velocity_minus_10_results.png) <br />
+![Initial Velocity = -10 cm/s](media/vel_10.png) <br />
 An initial velocity of -10 cm/s <br /> <br />
 
-![Initial Velocity = -20 cm/s](media/velocity_minus_20_results.png) <br />
+![Initial Velocity = -20 cm/s](media/vel_20.png) <br />
 An initial velocity of -20 cm/s <br /> <br />
 
-![Initial Velocity = -30 cm/s](media/velocity_minus_30_results.png) <br />
+![Initial Velocity = -30 cm/s](media/vel_30.png) <br />
 An initial velocity of -30 cm/s <br /> <br />
 
-![Initial Velocity = -40 cm/s](media/velocity_minus_40_results.png) <br />
+![Initial Velocity = -40 cm/s](media/vel_40.png) <br />
 An initial velocity of -40 cm/s <br /> <br />
 
-![Initial Velocity = -50 cm/s](media/velocity_minus_50_results.png) <br />
+![Initial Velocity = -50 cm/s](media/vel_50.png) <br />
 An initial velocity of -50 cm/s <br /> <br />
 
 # Looking Forward 
