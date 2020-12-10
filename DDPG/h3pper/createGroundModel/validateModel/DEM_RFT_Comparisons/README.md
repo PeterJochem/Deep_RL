@@ -48,6 +48,15 @@ An initial velocity of -40 cm/s <br /> <br />
 ![Initial Velocity = -50 cm/s](media/velocity_minus_50_results.png) <br />
 An initial velocity of -50 cm/s <br /> <br />
 
+# Looking Forward 
+## Issue 1
+The neural network's fit is good enough to indicate that it is learning but also not as good as we would like it to be. In general, the RFT calculations are better than the neural network model. One of the big goals of the project is to see how adding the velocity information to a model of the ground would change or possibly outperform the RFT model. There a few issues with the model. First, when the velocity is very low (approaching zero), the model's predicted force in the z direction goes to 0.0. I think this is likely due to some programming error in the data generating DEM code. The dataset should have very low velocity datapoints but I think the most likely reason for this is some error in my DEM code. This seems to me to be the most likely reason for the network mapping the grf-z to zero when the velocity is very low.        
+
+## Issue 2
+The other issue with the network is that the fit simply is not as good as we hoped for. I am unsure why the RFT model outperforms the neural network. I think there may be a few reasons. It may be that we simply need more data for the network. I don't think that is the case though. Another source of the problem is that the underlying function is very stiff. Looking at the results above at the DEM plots (in yellow), you see that over short periods of time, there are often big changes in the forces and torques. The sharpness of this underlying function might make it very hard for a neural network to fit the function. To remedy the stiffness issue, we could low pass filter the DEM data to enforce a smoother underlying function.   
+
+## If I Had More Time
+I would spend more time reading and learning about Project Chrono. I think the root of the problem is in the underlying generation of the data. I think there is some error in how I generated the data. Maybe Juntao could walk through the changes I made to the code and perhaps certify if the underlying code does what I think it does. I made a pipeline to automatically generate the dataset over the input space we care about and then processing the dataset into a neural network. There are also a pipleine for comparing the neural network to the ground data and the RFT model. I think the most useful thing would be for Juntao to walk through my DEM code and see if I have an error in how I am generating the data. If he finds some sort of issue and fixes it, it should be simple to obtain the new models and validating them. 
 
 # Files in Repo 
 ```eval_foot_gpm.m```: Highest level Matlab code for comparing the DEM data, RFT models, and neural network models of the ground. <br />   
