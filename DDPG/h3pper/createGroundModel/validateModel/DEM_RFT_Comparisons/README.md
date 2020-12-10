@@ -24,10 +24,6 @@ The neural network is trained on an independent dataset than the trajectories sh
 
 Below are the results of eval_foot_gpm on each trajectory from the DEM data.  
 
-Learned Policy             |  Reward Per Epoch over Time
-:-------------------------:|:-------------------------:
-![](media/vel_1_no_velocity.png)  | ![](media/vel_1.png)
-
 ![Initial Velocity = -1 cm/s](media/vel_1.png) <br />
 An initial velocity of -1 cm/s <br /> <br />
 
@@ -51,6 +47,9 @@ An initial velocity of -40 cm/s <br /> <br />
 
 ![Initial Velocity = -50 cm/s](media/vel_50.png) <br />
 An initial velocity of -50 cm/s <br /> <br />
+
+# Velocity Dependent and Velocity Independent Models Comparison
+Here is a [link](https://docs.google.com/presentation/d/1DHWpM0n6vbsa15mpyDhM3D7Tkq2NO_eBFXnaVTsLfIo/edit?usp=sharing) to a file describing how the model changes as we add the velocity information to the model. 
 
 # Looking Forward 
 ## Issue 1
