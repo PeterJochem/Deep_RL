@@ -26,7 +26,7 @@ Below are the results of eval_foot_gpm on each trajectory from the DEM data.
 
 Custom PyBullet Environment             |  Reward Per Epoch over Time
 :-------------------------:|:-------------------------:
-[](media/vel_1_no_velocity.png)  | ![](media/vel_1.png)
+![](media/vel_1_no_velocity.png)  | ![](media/vel_1.png)
 
 
 
