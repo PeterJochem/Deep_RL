@@ -11,11 +11,10 @@ from tensorflow import keras
 
 allReward = [] # List of rewards over time, for logging and visualization
 useNoise = True
-
 maxScore = -10000
 
 """Signal handler displays the agent's progress"""
-def handler1(signum, frame):
+def displayProgress(signum, frame):
 
     # Plot the data
     plt.plot(allReward)
@@ -24,7 +23,7 @@ def handler1(signum, frame):
     plt.show()
     # useNoise = False
 
-signal.signal(signal.SIGTSTP, handler1)
+signal.signal(signal.SIGTSTP, displayProgress)
 
 class Agent():
     
@@ -103,8 +102,7 @@ class Agent():
        
         critic_initializer = tf.random_uniform_initializer(minval = -0.003, maxval = 0.003)
 
-        state_inputs = layers.Input(shape=(self.state_space_size))
-        
+        state_inputs = layers.Input(shape=(self.state_space_size)) 
         state_stream = layers.BatchNormalization()(state_inputs) # Normalize this?
         state_stream = layers.Dense(400)(state_stream)
         state_stream = layers.BatchNormalization()(state_stream)
@@ -253,12 +251,7 @@ while (True):
                 myAgent.train()
                 update_target(myAgent.actor_target.variables, myAgent.actor.variables, myAgent.polyak_rate)
                 update_target(myAgent.critic_target.variables, myAgent.critic.variables, myAgent.polyak_rate)
-        """
-        if (myAgent.cumulativeReward > maxScore):
-            maxScore = myAgent.cumulativeReward
-            myAgent.saveNetworks()
-        """
-
+        
         current_state = next_state
 
             
